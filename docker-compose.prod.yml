@@ -1,0 +1,89 @@
+services:
+  # PostgreSQL Database
+  postgres:
+    image: postgres:15-alpine
+    container_name: medusa-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: medusa
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-medusa_password}
+      POSTGRES_DB: medusa_db
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - medusa-network
+    # Don't expose port in production - only internal access
+
+  # Redis (for caching and jobs)
+  redis:
+    image: redis:7-alpine
+    container_name: medusa-redis
+    restart: unless-stopped
+    networks:
+      - medusa-network
+    # Don't expose port in production - only internal access
+
+  # Medusa Backend
+  backend:
+    build:
+      context: ./my-store
+      dockerfile: Dockerfile
+    container_name: medusa-backend
+    restart: unless-stopped
+    depends_on:
+      - postgres
+      - redis
+    environment:
+      NODE_ENV: production
+      DATABASE_URL: postgres://medusa:${DB_PASSWORD:-medusa_password}@postgres:5432/medusa_db
+      REDIS_URL: redis://redis:6379
+      JWT_SECRET: ${JWT_SECRET}
+      COOKIE_SECRET: ${COOKIE_SECRET}
+      # CORS - Update with your actual domain
+      STORE_CORS: ${STORE_CORS:-https://yourdomain.com,https://www.yourdomain.com}
+      ADMIN_CORS: ${ADMIN_CORS:-https://api.yourdomain.com}
+      AUTH_CORS: ${AUTH_CORS:-https://api.yourdomain.com}
+      MEDUSA_ADMIN_ONBOARDING_TYPE: default
+      # Stripe keys
+      STRIPE_API_KEY: ${STRIPE_API_KEY}
+      STRIPE_WEBHOOK_SECRET: ${STRIPE_WEBHOOK_SECRET}
+    ports:
+      - "127.0.0.1:9000:9000"  # Only accessible from localhost (Nginx will proxy)
+    volumes:
+      - ./my-store:/app
+      - /app/node_modules
+      - backend_uploads:/app/uploads
+    networks:
+      - medusa-network
+
+  # Next.js Storefront
+  storefront:
+    build:
+      context: ./storefront
+      dockerfile: Dockerfile
+    container_name: medusa-storefront
+    restart: unless-stopped
+    depends_on:
+      - backend
+    environment:
+      NODE_ENV: production
+      # Update with your backend URL (via Nginx or direct)
+      NEXT_PUBLIC_MEDUSA_BACKEND_URL: ${NEXT_PUBLIC_MEDUSA_BACKEND_URL:-https://api.yourdomain.com}
+      NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY: ${NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY}
+    ports:
+      - "127.0.0.1:3000:3000"  # Only accessible from localhost (Nginx will proxy)
+    volumes:
+      - ./storefront:/app
+      - /app/node_modules
+      - /app/.next
+    networks:
+      - medusa-network
+
+volumes:
+  postgres_data:
+  backend_uploads:
+
+networks:
+  medusa-network:
+    driver: bridge
+

@@ -1,0 +1,55 @@
+services:
+  # Medusa Backend Service
+  - type: web
+    name: medusa-backend
+    env: node
+    plan: starter
+    buildCommand: cd my-store && npm install && npm run build
+    startCommand: cd my-store && npm run start
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: DATABASE_URL
+        sync: false  # Set this in Render dashboard
+      - key: STORE_CORS
+        value: https://your-storefront.onrender.com,http://localhost:3000
+      - key: ADMIN_CORS
+        value: https://your-admin.onrender.com,http://localhost:7001
+      - key: AUTH_CORS
+        value: https://your-storefront.onrender.com,http://localhost:3000
+      - key: JWT_SECRET
+        generateValue: true
+      - key: COOKIE_SECRET
+        generateValue: true
+      - key: STRIPE_API_KEY
+        sync: false  # Set this in Render dashboard
+      - key: STRIPE_WEBHOOK_SECRET
+        sync: false  # Set this in Render dashboard
+      - key: BANK_NAME
+        value: Your Bank Name
+      - key: PAYPAL_CLIENT_ID
+        sync: false  # Set this in Render dashboard
+      - key: PAYPAL_CLIENT_SECRET
+        sync: false  # Set this in Render dashboard
+      - key: PAYPAL_ENVIRONMENT
+        value: sandbox
+
+  # Next.js Storefront Service
+  - type: web
+    name: storefront
+    env: node
+    plan: starter
+    buildCommand: cd storefront && npm install && npm run build
+    startCommand: cd storefront && npm run start
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: NEXT_PUBLIC_MEDUSA_BACKEND_URL
+        fromService:
+          type: web
+          name: medusa-backend
+          property: host
+        # Or set manually: https://medusa-backend.onrender.com
+      - key: NEXT_PUBLIC_MEDUSA_API_KEY
+        sync: false  # Set this in Render dashboard (get from Medusa admin)
+

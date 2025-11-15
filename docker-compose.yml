@@ -1,0 +1,90 @@
+services:
+  # PostgreSQL Database
+  postgres:
+    image: postgres:15-alpine
+    container_name: medusa-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: medusa
+      POSTGRES_PASSWORD: medusa_password
+      POSTGRES_DB: medusa_db
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+    networks:
+      - medusa-network
+
+  # Redis (for caching and jobs)
+  redis:
+    image: redis:7-alpine
+    container_name: medusa-redis
+    restart: unless-stopped
+    ports:
+      - "6379:6379"
+    networks:
+      - medusa-network
+
+  # Medusa Backend
+  backend:
+    build:
+      context: ./my-store
+      dockerfile: Dockerfile
+    container_name: medusa-backend
+    restart: unless-stopped
+    depends_on:
+      - postgres
+      - redis
+    environment:
+      NODE_ENV: development
+      DATABASE_URL: postgres://medusa:medusa_password@postgres:5432/medusa_db
+      REDIS_URL: redis://redis:6379
+      JWT_SECRET: supersecretjwt123
+      COOKIE_SECRET: supersecretcookie123
+      STORE_CORS: http://localhost:3000,http://storefront:3000
+      ADMIN_CORS: http://localhost:9000,http://localhost:7001
+      AUTH_CORS: http://localhost:9000,http://localhost:7001
+      MEDUSA_ADMIN_ONBOARDING_TYPE: default
+      MEDUSA_ADMIN_ONBOARDING_NEXTJS_DIRECTORY: ../storefront
+      # Stripe keys (replace with your actual keys)
+      STRIPE_API_KEY: ${STRIPE_API_KEY}
+      STRIPE_WEBHOOK_SECRET: ${STRIPE_WEBHOOK_SECRET}
+    ports:
+      - "9000:9000"
+    volumes:
+      - ./my-store:/app
+      - /app/node_modules
+      - backend_uploads:/app/uploads
+    networks:
+      - medusa-network
+
+  # Next.js Storefront
+  storefront:
+    build:
+      context: ./storefront
+      dockerfile: Dockerfile
+    container_name: medusa-storefront
+    restart: unless-stopped
+    depends_on:
+      - backend
+    environment:
+      NODE_ENV: development
+      NEXT_PUBLIC_MEDUSA_BACKEND_URL: http://localhost:9000
+      NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY: ${NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY}
+    ports:
+      - "3000:3000"
+    volumes:
+      - ./storefront:/app
+      - /app/node_modules
+      - /app/.next
+    networks:
+      - medusa-network
+
+volumes:
+  postgres_data:
+  backend_uploads:
+
+networks:
+  medusa-network:
+    driver: bridge
+

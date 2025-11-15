@@ -1,0 +1,71 @@
+@import "tailwindcss";
+@import "@fortawesome/fontawesome-free/css/all.min.css";
+
+/* Tonnelier font - optional, will fallback to sans-serif if not found */
+/* Commented out to avoid 404 errors - uncomment when font files are added to public/fonts/ */
+/*
+@font-face {
+  font-family: 'Tonnelier';
+  src: url('/fonts/Tonnelier-Regular.woff2') format('woff2'),
+       url('/fonts/Tonnelier-Regular.woff') format('woff');
+  font-weight: normal;
+  font-style: normal;
+  font-display: swap;
+}
+*/
+
+:root {
+  --background: #ffffff;
+  --foreground: #171717;
+  
+  /* Custom Color Variables */
+  --greywhite: #E7ECEF;
+  --darkerblue: #274C77;
+  --lighterblue: #6096BA;
+  --skyblue: #A3CEF1;
+  --browngrey: #8B8C89;
+  --blackblueish: #34495e;
+  --dark: #373349;
+  --shadow: rgba(0, 0, 0, .2);
+  
+  /* Font Awesome Variables */
+  --fa-style-family-classic: "Font Awesome 6 Free";
+  --fa-font-solid: normal 900 1em / 1 "Font Awesome 6 Free";
+  --fa-font-regular: normal 400 1em / 1 "Font Awesome 6 Free";
+  --fa-style-family-brands: "Font Awesome 6 Brands";
+  --fa-font-brands: normal 400 1em / 1 "Font Awesome 6 Brands";
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+      --font-sans: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', sans-serif;
+  --font-mono: var(--font-geist-mono);
+  
+  /* Custom Colors */
+  --color-greywhite: var(--greywhite);
+  --color-darkerblue: var(--darkerblue);
+  --color-lighterblue: var(--lighterblue);
+  --color-skyblue: var(--skyblue);
+  --color-browngrey: var(--browngrey);
+  --color-blackblueish: var(--blackblueish);
+  --color-dark: var(--dark);
+  --color-shadow: var(--shadow);
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --background: #0a0a0a;
+    --foreground: #ededed;
+  }
+}
+
+* {
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen', 'Ubuntu', 'Cantarell', sans-serif;
+}
+
+body {
+  background: var(--background);
+  color: var(--foreground);
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen', 'Ubuntu', 'Cantarell', sans-serif;
+}

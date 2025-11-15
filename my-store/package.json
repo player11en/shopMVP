@@ -14,6 +14,7 @@
   ],
   "scripts": {
     "build": "medusa build",
+    "build:verify": "medusa build && test -f .medusa/server/public/admin/index.html || (echo 'ERROR: Admin build failed!' && exit 1)",
     "seed": "medusa exec ./src/scripts/seed.ts",
     "migrate": "medusa db:migrate",
     "start": "medusa db:migrate && medusa start",

@@ -1,21 +1,43 @@
+# ============================================
+# MEDUSA BACKEND ENVIRONMENT VARIABLES
+# ============================================
+# Set these in the "medusa-backend" service on Render
+
 DATABASE_URL=postgresql://medusa_ot4b_user:UwuxR860WK14rtcgDaWvpLArHKOfYjjs@dpg-d4bv8uq4d50c73cr9u1g-a/medusa_ot4b
 NODE_ENV=production
 PORT=9000
-STORE_CORS=https://storefront.onrender.com,http://localhost:3000
+
+# CORS Settings - Update with your actual frontend URL
+STORE_CORS=https://storefront-tg3r.onrender.com,http://localhost:3000
 ADMIN_CORS=https://medusa-backend-e42r.onrender.com,http://localhost:7001
-AUTH_CORS=https://storefront.onrender.com,http://localhost:3000
+AUTH_CORS=https://storefront-tg3r.onrender.com,http://localhost:3000
+
+# Security Secrets (already generated)
 JWT_SECRET=cb22a8189a9070e8cbd7a3cefa225c6bbd0e2c1a022f9f1b61aa873a8f49f814
 COOKIE_SECRET=c33404b1968dd0bbf166f6f1e2881f87e030de666dad8399cafcd5a62c1c6494
+
+# Stripe Configuration
 STRIPE_API_KEY=sk_test_YOUR_STRIPE_SECRET_KEY_HERE
 STRIPE_WEBHOOK_SECRET=whsec_your_webhook_secret
+
+# Bank Transfer Configuration
 BANK_NAME=Your Bank Name
 BANK_ACCOUNT_NUMBER=1234567890
 BANK_IBAN=GB82WEST12345698765432
 BANK_ROUTING_NUMBER=
 BANK_SWIFT=
 BANK_TRANSFER_INSTRUCTIONS=Please transfer the amount to our bank account. Order will be confirmed once payment is received.
+
+# PayPal Configuration
 PAYPAL_CLIENT_ID=AVKmSGeR5AYbaI2xvrZDnwAs9wAuX4AlwiI256kAN1euYxxxD_IY8XOzNmcxAjSQhIeJvyCtPD6M1RlG
 PAYPAL_CLIENT_SECRET=EAa-UUswdno9WDb7u8ujpDRUeGb26vNlf5SDLk_0qlIyDKNHN5GeUtStAfCCzwxWKrqDTnAuIRFmeKYp
 PAYPAL_ENVIRONMENT=sandbox
+
+# ============================================
+# STOREFRONT ENVIRONMENT VARIABLES
+# ============================================
+# Set these in the "storefront" service on Render
+
+NODE_ENV=production
 NEXT_PUBLIC_MEDUSA_BACKEND_URL=https://medusa-backend-e42r.onrender.com
 NEXT_PUBLIC_MEDUSA_API_KEY=pk_test_51STTegDuJ75CtIxvA2jhYWF27jjCCiEknxjEjQzBdo27hkNc9nfUnd854Bcce3I129jk2cO0jgACZYilMsFBugXT00dAwZE618

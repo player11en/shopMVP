@@ -13,12 +13,19 @@ export function AddToCartButton({ variantId }: { variantId: string }) {
 
     try {
       // Get or create cart
-      let cartId = localStorage.getItem("cart_id");
+      let cartId: string | null = localStorage.getItem("cart_id");
       
       if (!cartId) {
         const cart = await createCart();
         cartId = cart.cart.id;
-        localStorage.setItem("cart_id", cartId);
+        if (cartId) {
+          localStorage.setItem("cart_id", cartId);
+        }
+      }
+
+      // Ensure we have a valid cart ID
+      if (!cartId) {
+        throw new Error("Failed to create or retrieve cart");
       }
 
       // Add item to cart
@@ -32,10 +39,14 @@ export function AddToCartButton({ variantId }: { variantId: string }) {
           localStorage.removeItem("cart_id");
           const cart = await createCart();
           cartId = cart.cart.id;
-          localStorage.setItem("cart_id", cartId);
-      await addToCart(cartId, variantId, 1);
-      setMessage("Added to cart!");
-      setTimeout(() => setMessage(""), 2000);
+          if (cartId) {
+            localStorage.setItem("cart_id", cartId);
+            await addToCart(cartId, variantId, 1);
+            setMessage("Added to cart!");
+            setTimeout(() => setMessage(""), 2000);
+          } else {
+            throw new Error("Failed to create new cart");
+          }
         } else {
           throw error;
         }

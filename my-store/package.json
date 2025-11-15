@@ -15,7 +15,8 @@
   "scripts": {
     "build": "medusa build",
     "seed": "medusa exec ./src/scripts/seed.ts",
-    "start": "medusa start",
+    "migrate": "medusa db:migrate",
+    "start": "medusa db:migrate && medusa start",
     "dev": "medusa develop",
     "dev:link": "NODE_OPTIONS='--preserve-symlinks' medusa develop",
     "test:integration:http": "TEST_TYPE=integration:http NODE_OPTIONS=--experimental-vm-modules jest --silent=false --runInBand --forceExit",

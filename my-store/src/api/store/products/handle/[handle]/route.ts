@@ -61,7 +61,7 @@ export async function GET(
         
         try {
           // Method 1: Try price module service
-          const priceModuleService = req.scope.resolve("price");
+          const priceModuleService = req.scope.resolve("price") as any;
           const [priceList] = await priceModuleService.listAndCountPrices({
             variant_id: variantIds,
           });
@@ -77,7 +77,7 @@ export async function GET(
               fields: ["id", "amount", "currency_code", "variant_id"],
               filters: {
                 variant_id: variantIds,
-              },
+              } as any,
             });
             prices = priceData || [];
           } catch (e2: any) {

@@ -2,14 +2,6 @@
 
 import { useEffect } from "react";
 
-declare global {
-  namespace JSX {
-    interface IntrinsicElements {
-      "model-viewer": any;
-    }
-  }
-}
-
 export function ModelViewerGoogle({ 
   modelUrl, 
   fallbackImage 
@@ -50,6 +42,7 @@ export function ModelViewerGoogle({
 
   return (
     <div className="relative w-full h-96 bg-gray-100 rounded-lg overflow-hidden">
+      {/* @ts-expect-error - model-viewer is a web component loaded dynamically */}
       <model-viewer
         src={modelUrl}
         alt="3D Product Model"
@@ -62,6 +55,7 @@ export function ModelViewerGoogle({
         {fallbackImage && (
           <img slot="poster" src={fallbackImage} alt="Product" />
         )}
+      {/* @ts-expect-error */}
       </model-viewer>
     </div>
   );

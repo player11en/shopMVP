@@ -1,19 +1,7 @@
 import { 
   AbstractPaymentProvider, 
   PaymentSessionStatus,
-  InitiatePaymentInput,
-  InitiatePaymentOutput,
-  AuthorizePaymentInput,
-  AuthorizePaymentOutput,
-  CancelPaymentInput,
-  CancelPaymentOutput,
-  CapturePaymentInput,
-  CapturePaymentOutput,
-  DeletePaymentInput,
-  DeletePaymentOutput,
-  RefundPaymentInput,
-  GetPaymentStatusInput,
-  GetPaymentStatusOutput,
+  PaymentActions,
   ModuleProvider,
   Modules,
 } from "@medusajs/framework/utils"
@@ -32,8 +20,8 @@ class PayPalProvider extends AbstractPaymentProvider<PayPalOptions> {
     // For now, we'll allow it to work without them (manual mode)
   }
 
-  async getPaymentStatus(input: GetPaymentStatusInput): Promise<GetPaymentStatusOutput> {
-    const paymentSessionData = input.paymentSessionData || {}
+  async getPaymentStatus(input: any): Promise<any> {
+    const paymentSessionData = input.paymentSessionData || input.data || {}
     const status = paymentSessionData.status as string
     if (status === "completed" || status === "captured") {
       return { status: PaymentSessionStatus.AUTHORIZED }
@@ -44,18 +32,19 @@ class PayPalProvider extends AbstractPaymentProvider<PayPalOptions> {
     return { status: PaymentSessionStatus.REQUIRES_MORE }
   }
 
-  async getWebhookActionAndData(payload: Record<string, unknown>): Promise<{ action: string; data: Record<string, unknown> }> {
+  async getWebhookActionAndData(data: any): Promise<any> {
     // PayPal webhook handling would go here
-    return { action: "payment.updated", data: payload }
+    return { action: PaymentActions.NOT_SUPPORTED, data: { session_id: "", amount: 0 } }
   }
 
-  async initiatePayment(input: InitiatePaymentInput): Promise<InitiatePaymentOutput> {
+  async initiatePayment(input: any): Promise<any> {
     const { amount, currency_code } = input
 
     // For now, this is a placeholder that creates a pending session
     // In production, you would integrate with PayPal SDK here
     // TODO: Integrate with PayPal SDK when credentials are available
     return {
+      id: `paypal_${Date.now()}`,
       data: {
         status: "pending",
         amount,
@@ -68,30 +57,38 @@ class PayPalProvider extends AbstractPaymentProvider<PayPalOptions> {
     }
   }
 
-  async authorizePayment(input: AuthorizePaymentInput): Promise<AuthorizePaymentOutput> {
+  async authorizePayment(input: any): Promise<any> {
     // PayPal authorization would go here
     // For now, just return pending
     return { data: input.data, status: PaymentSessionStatus.PENDING }
   }
 
-  async cancelPayment(input: CancelPaymentInput): Promise<CancelPaymentOutput> {
+  async cancelPayment(input: any): Promise<any> {
     return { data: input.data }
   }
 
-  async capturePayment(input: CapturePaymentInput): Promise<CapturePaymentOutput> {
+  async capturePayment(input: any): Promise<any> {
     return { data: input.data }
   }
 
-  async deletePayment(input: DeletePaymentInput): Promise<DeletePaymentOutput> {
+  async deletePayment(input: any): Promise<any> {
     return { data: input.data }
   }
 
-  async refundPayment(input: RefundPaymentInput): Promise<{ data: Record<string, unknown> }> {
+  async refundPayment(input: any): Promise<any> {
     return { data: input.data }
+  }
+
+  async retrievePayment(input: any): Promise<any> {
+    return { data: input.data }
+  }
+
+  async updatePayment(input: any): Promise<any> {
+    return this.initiatePayment(input)
   }
 }
 
 // Export as a module provider for Medusa v2
 export default ModuleProvider(Modules.PAYMENT, {
-  services: [PayPalProvider],
+  services: [PayPalProvider as any],
 })

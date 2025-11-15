@@ -245,15 +245,15 @@ function CheckoutContent() {
         
         // If no providers from region, try payment sessions (legacy method)
         if (regionProviders.length === 0) {
-          try {
+        try {
             console.log("🔄 Creating payment sessions for cart:", cartId);
-            await createPaymentSession(cartId);
-            const sessionData = await getPaymentSession(cartId);
+          await createPaymentSession(cartId);
+          const sessionData = await getPaymentSession(cartId);
             
             console.log("📦 Payment session data:", sessionData);
-            
-            if (sessionData.payment_sessions && sessionData.payment_sessions.length > 0) {
-              // Extract unique providers from payment sessions
+          
+          if (sessionData.payment_sessions && sessionData.payment_sessions.length > 0) {
+            // Extract unique providers from payment sessions
               const providers = sessionData.payment_sessions.map((ps: any) => {
                 let name = ps.provider_id;
                 // Format provider names
@@ -264,25 +264,25 @@ function CheckoutContent() {
                 else name = name.replace(/^pp_/, '').replace(/_/g, ' ').replace(/\b\w/g, (l: string) => l.toUpperCase());
                 
                 return {
-                  id: ps.provider_id,
+              id: ps.provider_id,
                   name: name
                 };
               });
-              setPaymentProviders(providers);
-              
-              // Auto-select first provider
-              if (providers.length > 0) {
-                setSelectedProvider(providers[0].id);
-              }
-              console.log(`✅ Found ${providers.length} payment provider(s):`, providers);
-            } else {
+            setPaymentProviders(providers);
+            
+            // Auto-select first provider
+            if (providers.length > 0) {
+              setSelectedProvider(providers[0].id);
+            }
+            console.log(`✅ Found ${providers.length} payment provider(s):`, providers);
+          } else {
               console.error("❌ No payment sessions in response:", sessionData);
               console.warn("⚠️ No payment sessions created - check if providers are added to region in admin");
-            }
-          } catch (sessionError: any) {
+          }
+        } catch (sessionError: any) {
             console.error("❌ Error creating payment sessions:", sessionError);
             console.error("❌ Error details:", sessionError.message, sessionError.stack);
-            // Continue without payment providers for now
+          // Continue without payment providers for now
           }
         }
       } catch (e: any) {
@@ -355,7 +355,7 @@ function CheckoutContent() {
       // Step 3: Payment sessions should already be created in loadCart
       // But we'll refresh them to ensure they're up to date with the new address
       try {
-        await createPaymentSession(cartId);
+      await createPaymentSession(cartId);
       } catch (paymentError: any) {
         // If payment session creation fails, check if it's because no providers are configured
         if (paymentError.message?.includes('payment provider') || paymentError.message?.includes('provider')) {
@@ -366,20 +366,20 @@ function CheckoutContent() {
 
       // Step 4: Select payment provider (only if providers are available)
       if (paymentProviders.length > 0) {
-        if (selectedProvider) {
-          await selectPaymentSession(cartId, selectedProvider);
-          
-          // If Stripe, get payment session data and show card form
-          if (selectedProvider.includes('stripe')) {
-            const sessionData = await getPaymentSession(cartId);
-            const stripeSession = sessionData.payment_sessions?.find((ps: any) => ps.provider_id === selectedProvider);
-            if (stripeSession?.data?.client_secret) {
-              setPaymentSessionData(stripeSession);
-              setShowStripeForm(true);
-              setProcessing(false);
-              return;
-            }
+      if (selectedProvider) {
+        await selectPaymentSession(cartId, selectedProvider);
+        
+        // If Stripe, get payment session data and show card form
+        if (selectedProvider.includes('stripe')) {
+          const sessionData = await getPaymentSession(cartId);
+          const stripeSession = sessionData.payment_sessions?.find((ps: any) => ps.provider_id === selectedProvider);
+          if (stripeSession?.data?.client_secret) {
+            setPaymentSessionData(stripeSession);
+            setShowStripeForm(true);
+            setProcessing(false);
+            return;
           }
+        }
         } else {
           throw new Error("Please select a payment method");
         }
@@ -608,45 +608,45 @@ function CheckoutContent() {
 
                 {!isDigitalOnly && (
                   <>
-                    <div>
-                      <label className="block text-sm font-medium mb-1" style={{ color: 'var(--darkerblue)' }}>
-                        Address *
-                      </label>
-                      <input
-                        type="text"
+                <div>
+                  <label className="block text-sm font-medium mb-1" style={{ color: 'var(--darkerblue)' }}>
+                    Address *
+                  </label>
+                  <input
+                    type="text"
                         required={!isDigitalOnly}
-                        value={formData.address}
-                        onChange={(e) => setFormData({ ...formData, address: e.target.value })}
-                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-900"
-                      />
-                    </div>
+                    value={formData.address}
+                    onChange={(e) => setFormData({ ...formData, address: e.target.value })}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-900"
+                  />
+                </div>
 
-                    <div className="grid grid-cols-2 gap-4">
-                      <div>
-                        <label className="block text-sm font-medium mb-1" style={{ color: 'var(--darkerblue)' }}>
-                          City *
-                        </label>
-                        <input
-                          type="text"
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-sm font-medium mb-1" style={{ color: 'var(--darkerblue)' }}>
+                      City *
+                    </label>
+                    <input
+                      type="text"
                           required={!isDigitalOnly}
-                          value={formData.city}
-                          onChange={(e) => setFormData({ ...formData, city: e.target.value })}
-                          className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-900"
-                        />
-                      </div>
-                      <div>
-                        <label className="block text-sm font-medium mb-1" style={{ color: 'var(--darkerblue)' }}>
-                          Postal Code *
-                        </label>
-                        <input
-                          type="text"
+                      value={formData.city}
+                      onChange={(e) => setFormData({ ...formData, city: e.target.value })}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-900"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium mb-1" style={{ color: 'var(--darkerblue)' }}>
+                      Postal Code *
+                    </label>
+                    <input
+                      type="text"
                           required={!isDigitalOnly}
-                          value={formData.postalCode}
-                          onChange={(e) => setFormData({ ...formData, postalCode: e.target.value })}
-                          className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-900"
-                        />
-                      </div>
-                    </div>
+                      value={formData.postalCode}
+                      onChange={(e) => setFormData({ ...formData, postalCode: e.target.value })}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-900"
+                    />
+                  </div>
+                </div>
                   </>
                 )}
 

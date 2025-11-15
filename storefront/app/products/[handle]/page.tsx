@@ -268,19 +268,19 @@ export default async function ProductPage({
                       const currencySymbol = currencyCode === 'eur' ? '€' : currencyCode === 'usd' ? '$' : '';
                       
                       return (
-                        <div
-                          key={variant.id}
-                          className="border rounded-lg p-4"
-                          style={{ borderColor: 'var(--skyblue)', backgroundColor: 'var(--greywhite)' }}
-                        >
-                          <div className="flex justify-between items-center">
+                      <div
+                        key={variant.id}
+                        className="border rounded-lg p-4"
+                        style={{ borderColor: 'var(--skyblue)', backgroundColor: 'var(--greywhite)' }}
+                      >
+                        <div className="flex justify-between items-center">
                             <div className="flex-1">
-                              <p className="font-medium" style={{ color: 'var(--darkerblue)' }}>
-                                {variant.title}
-                              </p>
-                              {variant.sku && (
-                                <p className="text-sm" style={{ color: 'var(--browngrey)' }}>SKU: {variant.sku}</p>
-                              )}
+                            <p className="font-medium" style={{ color: 'var(--darkerblue)' }}>
+                              {variant.title}
+                            </p>
+                            {variant.sku && (
+                              <p className="text-sm" style={{ color: 'var(--browngrey)' }}>SKU: {variant.sku}</p>
+                            )}
                               <div className="flex items-center gap-2 mt-1">
                                 {isFreeVariant ? (
                                   <p className="text-sm font-semibold text-green-600">

@@ -127,11 +127,11 @@ export async function fetchProduct(handle: string) {
     // Try to get metadata from custom endpoint
     try {
       const customResponse = await fetch(`${MEDUSA_BACKEND_URL}/store/products/handle/${handle}`, {
-        headers: {
-          "x-publishable-api-key": MEDUSA_API_KEY,
-        },
-        cache: 'no-store',
-      });
+          headers: {
+            "x-publishable-api-key": MEDUSA_API_KEY,
+          },
+          cache: 'no-store',
+        });
 
       if (customResponse.ok) {
         const customData = await customResponse.json();

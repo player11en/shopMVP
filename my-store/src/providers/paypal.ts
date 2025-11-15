@@ -12,11 +12,8 @@ import {
   DeletePaymentInput,
   DeletePaymentOutput,
   RefundPaymentInput,
-  RefundPaymentOutput,
-  RetrievePaymentInput,
-  RetrievePaymentOutput,
-  UpdatePaymentInput,
-  UpdatePaymentOutput,
+  GetPaymentStatusInput,
+  GetPaymentStatusOutput,
   ModuleProvider,
   Modules,
 } from "@medusajs/framework/utils"
@@ -35,15 +32,21 @@ class PayPalProvider extends AbstractPaymentProvider<PayPalOptions> {
     // For now, we'll allow it to work without them (manual mode)
   }
 
-  async getPaymentStatus(paymentSessionData: Record<string, unknown>): Promise<PaymentSessionStatus> {
+  async getPaymentStatus(input: GetPaymentStatusInput): Promise<GetPaymentStatusOutput> {
+    const paymentSessionData = input.paymentSessionData || {}
     const status = paymentSessionData.status as string
     if (status === "completed" || status === "captured") {
-      return PaymentSessionStatus.AUTHORIZED
+      return { status: PaymentSessionStatus.AUTHORIZED }
     }
     if (status === "pending") {
-      return PaymentSessionStatus.PENDING
+      return { status: PaymentSessionStatus.PENDING }
     }
-    return PaymentSessionStatus.REQUIRES_MORE
+    return { status: PaymentSessionStatus.REQUIRES_MORE }
+  }
+
+  async getWebhookActionAndData(payload: Record<string, unknown>): Promise<{ action: string; data: Record<string, unknown> }> {
+    // PayPal webhook handling would go here
+    return { action: "payment.updated", data: payload }
   }
 
   async initiatePayment(input: InitiatePaymentInput): Promise<InitiatePaymentOutput> {
@@ -83,16 +86,8 @@ class PayPalProvider extends AbstractPaymentProvider<PayPalOptions> {
     return { data: input.data }
   }
 
-  async refundPayment(input: RefundPaymentInput): Promise<RefundPaymentOutput> {
+  async refundPayment(input: RefundPaymentInput): Promise<{ data: Record<string, unknown> }> {
     return { data: input.data }
-  }
-
-  async retrievePayment(input: RetrievePaymentInput): Promise<RetrievePaymentOutput> {
-    return { data: input.data }
-  }
-
-  async updatePayment(input: UpdatePaymentInput): Promise<UpdatePaymentOutput> {
-    return this.initiatePayment(input)
   }
 }
 
@@ -100,4 +95,3 @@ class PayPalProvider extends AbstractPaymentProvider<PayPalOptions> {
 export default ModuleProvider(Modules.PAYMENT, {
   services: [PayPalProvider],
 })
-

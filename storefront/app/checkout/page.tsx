@@ -704,7 +704,7 @@ function CheckoutContent() {
                                 if (provider.id === 'stripe') return '💳 Stripe'
                                 if (provider.id === 'bank_transfer') return '🏦 Bank Transfer'
                                 if (provider.id === 'paypal') return '💙 PayPal'
-                                return provider.id.replace(/^pp_/, '').replace(/_/g, ' ').replace(/\b\w/g, (l) => l.toUpperCase())
+                                return provider.id.replace(/^pp_/, '').replace(/_/g, ' ').replace(/\b\w/g, (l: string) => l.toUpperCase())
                               })()}
                             </p>
                             {provider.id === 'pp_system_default' && (

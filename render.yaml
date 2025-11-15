@@ -4,8 +4,9 @@ services:
     name: medusa-backend
     env: node
     plan: starter
-    buildCommand: cd my-store && npm install && npm run build
-    startCommand: cd my-store && npm run start
+    rootDir: my-store
+    buildCommand: npm install && npm run build
+    startCommand: npm run start
     envVars:
       - key: NODE_ENV
         value: production
@@ -39,8 +40,9 @@ services:
     name: storefront
     env: node
     plan: starter
-    buildCommand: cd storefront && npm install && npm run build
-    startCommand: cd storefront && npm run start
+    rootDir: storefront
+    buildCommand: npm install && npm run build
+    startCommand: npm run start
     envVars:
       - key: NODE_ENV
         value: production

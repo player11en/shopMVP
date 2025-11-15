@@ -12,11 +12,8 @@ import {
   DeletePaymentInput,
   DeletePaymentOutput,
   RefundPaymentInput,
-  RefundPaymentOutput,
-  RetrievePaymentInput,
-  RetrievePaymentOutput,
-  UpdatePaymentInput,
-  UpdatePaymentOutput,
+  GetPaymentStatusInput,
+  GetPaymentStatusOutput,
   ModuleProvider,
   Modules,
 } from "@medusajs/framework/utils"
@@ -37,9 +34,14 @@ class BankTransferProvider extends AbstractPaymentProvider<BankTransferOptions> 
     // Bank transfer doesn't require API keys, but you can validate custom options here
   }
 
-  async getPaymentStatus(paymentSessionData: Record<string, unknown>): Promise<PaymentSessionStatus> {
+  async getPaymentStatus(input: GetPaymentStatusInput): Promise<GetPaymentStatusOutput> {
     // Bank transfers are always pending until manually confirmed
-    return PaymentSessionStatus.PENDING
+    return { status: PaymentSessionStatus.PENDING }
+  }
+
+  async getWebhookActionAndData(payload: Record<string, unknown>): Promise<{ action: string; data: Record<string, unknown> }> {
+    // Bank transfers don't use webhooks
+    return { action: "payment.updated", data: payload }
   }
 
   async initiatePayment(input: InitiatePaymentInput): Promise<InitiatePaymentOutput> {
@@ -84,17 +86,9 @@ class BankTransferProvider extends AbstractPaymentProvider<BankTransferOptions> 
     return { data: input.data }
   }
 
-  async refundPayment(input: RefundPaymentInput): Promise<RefundPaymentOutput> {
+  async refundPayment(input: RefundPaymentInput): Promise<{ data: Record<string, unknown> }> {
     // Bank transfer refunds are handled manually
     return { data: input.data }
-  }
-
-  async retrievePayment(input: RetrievePaymentInput): Promise<RetrievePaymentOutput> {
-    return { data: input.data }
-  }
-
-  async updatePayment(input: UpdatePaymentInput): Promise<UpdatePaymentOutput> {
-    return this.initiatePayment(input)
   }
 }
 
@@ -102,4 +96,3 @@ class BankTransferProvider extends AbstractPaymentProvider<BankTransferOptions> 
 export default ModuleProvider(Modules.PAYMENT, {
   services: [BankTransferProvider],
 })
-

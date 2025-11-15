@@ -6,7 +6,7 @@ export default async function getApiKey({ container }: ExecArgs) {
   
   try {
     // Try to get API key module service
-    const apiKeyModuleService = container.resolve("apiKey")
+    const apiKeyModuleService = container.resolve("apiKey") as any
     
     const [apiKeys] = await apiKeyModuleService.listAndCount({
       type: "publishable",

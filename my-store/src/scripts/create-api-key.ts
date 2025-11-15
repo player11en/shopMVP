@@ -9,7 +9,7 @@ export default async function createApiKey({ container }: ExecArgs) {
     logger.info("Creating publishable API key...")
     
     // Get sales channel service to find default channel
-    const salesChannelModuleService = container.resolve("salesChannelService")
+    const salesChannelModuleService = container.resolve("salesChannelService") as any
     const [salesChannels] = await salesChannelModuleService.listAndCount({})
     
     if (salesChannels.length === 0) {

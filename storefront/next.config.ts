@@ -22,6 +22,15 @@ const nextConfig: NextConfig = {
         hostname: "localhost",
         port: "9000",
       },
+      {
+        protocol: "https",
+        hostname: "medusa-backend-e42r.onrender.com",
+        pathname: "/static/**",
+      },
+      {
+        protocol: "https",
+        hostname: "medusa-backend-e42r.onrender.com",
+      },
     ],
   },
 };

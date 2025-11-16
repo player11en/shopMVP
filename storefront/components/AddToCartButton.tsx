@@ -19,7 +19,7 @@ export function AddToCartButton({ variantId }: { variantId: string }) {
         const cart = await createCart();
         cartId = cart.cart.id;
         if (cartId) {
-          localStorage.setItem("cart_id", cartId);
+        localStorage.setItem("cart_id", cartId);
         }
       }
 
@@ -41,9 +41,9 @@ export function AddToCartButton({ variantId }: { variantId: string }) {
           cartId = cart.cart.id;
           if (cartId) {
             localStorage.setItem("cart_id", cartId);
-            await addToCart(cartId, variantId, 1);
-            setMessage("Added to cart!");
-            setTimeout(() => setMessage(""), 2000);
+      await addToCart(cartId, variantId, 1);
+      setMessage("Added to cart!");
+      setTimeout(() => setMessage(""), 2000);
           } else {
             throw new Error("Failed to create new cart");
           }

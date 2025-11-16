@@ -8,38 +8,60 @@ export default async function createAdmin({ container }: ExecArgs) {
   const password = process.env.MEDUSA_ADMIN_PASSWORD
   
   if (!email || !password) {
-    logger.warn("MEDUSA_ADMIN_EMAIL and MEDUSA_ADMIN_PASSWORD environment variables are not set.")
-    logger.info("")
-    logger.info("To create an admin user:")
-    logger.info("1. Go to your admin dashboard: https://your-backend.onrender.com/app")
-    logger.info("2. Create an account using the signup form")
-    logger.info("")
+    logger.info("MEDUSA_ADMIN_EMAIL and MEDUSA_ADMIN_PASSWORD not set. Skipping admin user creation.")
     return
   }
   
   try {
     logger.info(`Creating admin user: ${email}`)
     
-    // Get auth module service
+    // Use the internal invite workflow approach
+    const userModuleService = container.resolve(Modules.USER) as any
     const authModuleService = container.resolve(Modules.AUTH) as any
     
-    // Try to create the admin user directly
+    // Check if user already exists
+    const existingUsers = await userModuleService.listUsers({
+      email: email
+    })
+    
+    if (existingUsers && existingUsers.length > 0) {
+      logger.info(`✅ Admin user already exists: ${email}`)
+      return
+    }
+    
+    // Create user first
+    const [user] = await userModuleService.createUsers({
+      email: email,
+      first_name: "Admin",
+      last_name: "User"
+    })
+    
+    logger.info(`User created with ID: ${user.id}`)
+    
+    // Create auth identity linked to the user
     await authModuleService.createAuthIdentities({
       provider: "emailpass",
       entity_id: email,
       provider_metadata: {
-        email: email,
-        password: password,
-      } as any,
-    } as any)
+        password: password
+      },
+      user_metadata: {
+        actor_id: user.id,
+        actor_type: "user"
+      },
+      app_metadata: {
+        user_id: user.id
+      }
+    })
     
     logger.info("")
     logger.info("=".repeat(60))
     logger.info("✅ ADMIN USER CREATED SUCCESSFULLY")
     logger.info("=".repeat(60))
     logger.info(`Email: ${email}`)
+    logger.info(`User ID: ${user.id}`)
     logger.info("")
-    logger.info("You can now log in to the admin dashboard.")
+    logger.info("You can now log in to the admin dashboard!")
     logger.info("=".repeat(60))
     logger.info("")
     
@@ -48,18 +70,13 @@ export default async function createAdmin({ container }: ExecArgs) {
     
     // Check if user already exists
     if (errorMsg.includes("already exists") || errorMsg.includes("duplicate") || errorMsg.includes("unique constraint")) {
-      logger.info(`ℹ️  Admin user already exists: ${email}`)
-      logger.info("You can log in to the admin dashboard with your existing credentials.")
+      logger.info(`✅ Admin user already exists: ${email}`)
       return
     }
     
-    // Log the error but don't fail the startup
     logger.warn(`Could not auto-create admin user: ${errorMsg}`)
-    logger.info("")
-    logger.info("Please create an admin account manually:")
-    logger.info("1. Go to your admin dashboard: /app")
-    logger.info("2. Sign up using the form")
-    logger.info("")
+    logger.info("You can create an admin user manually via the Medusa CLI:")
+    logger.info(`npx medusa user --email ${email} --password YOUR_PASSWORD`)
   }
 }
 

@@ -17,7 +17,7 @@
     "postbuild": "mkdir -p .medusa/server/public/admin && (test -f .medusa/server/public/admin/index.html || echo '<!DOCTYPE html><html><head><title>Admin</title></head><body><h1>Admin Dashboard</h1><p>Admin is not available in this deployment.</p></body></html>' > .medusa/server/public/admin/index.html)",
     "seed": "medusa exec ./src/scripts/seed.ts",
     "migrate": "medusa db:migrate",
-    "start": "medusa db:migrate && (test -f .medusa/server/public/admin/index.html || mkdir -p .medusa/server/public/admin && echo '<!DOCTYPE html><html><head><title>Admin</title></head><body><h1>Admin Dashboard</h1><p>Admin is not available in this deployment.</p></body></html>' > .medusa/server/public/admin/index.html) && medusa start",
+    "start": "medusa db:migrate && mkdir -p .medusa/server/public/admin && (test -f .medusa/server/public/admin/index.html || echo '<!DOCTYPE html><html><head><title>Admin</title></head><body><h1>Admin Dashboard</h1><p>Admin is not available in this deployment.</p></body></html>' > .medusa/server/public/admin/index.html) && ls -la .medusa/server/public/admin/ && medusa start",
     "dev": "medusa develop",
     "dev:link": "NODE_OPTIONS='--preserve-symlinks' medusa develop",
     "test:integration:http": "TEST_TYPE=integration:http NODE_OPTIONS=--experimental-vm-modules jest --silent=false --runInBand --forceExit",

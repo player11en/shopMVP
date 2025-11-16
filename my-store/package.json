@@ -13,12 +13,10 @@
     "medusa"
   ],
   "scripts": {
-    "build": "medusa build",
-    "postbuild": "mkdir -p .medusa/server/public/admin && (test -f .medusa/server/public/admin/index.html || echo '<!DOCTYPE html><html><head><title>Admin</title></head><body><h1>Admin Dashboard</h1><p>Admin is not available in this deployment.</p></body></html>' > .medusa/server/public/admin/index.html)",
-    "seed": "medusa exec ./src/scripts/seed.ts",
+    "build": "medusa build && ln -s .medusa/server/public/ public",
+    "seed": "NODE_ENV=development medusa exec ./src/scripts/seed.ts",
     "migrate": "medusa db:migrate",
-    "prestart": "mkdir -p .medusa/server/public/admin && echo '<!DOCTYPE html><html><head><title>Admin</title></head><body><h1>Admin Dashboard</h1><p>Admin is not available in this deployment.</p></body></html>' > .medusa/server/public/admin/index.html && ls -la .medusa/server/public/admin/index.html",
-    "start": "medusa db:migrate && medusa start",
+    "start": "medusa db:migrate && NODE_ENV=production medusa start -H 0.0.0.0",
     "dev": "medusa develop",
     "dev:link": "NODE_OPTIONS='--preserve-symlinks' medusa develop",
     "test:integration:http": "TEST_TYPE=integration:http NODE_OPTIONS=--experimental-vm-modules jest --silent=false --runInBand --forceExit",

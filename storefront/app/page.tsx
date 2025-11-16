@@ -20,15 +20,6 @@ export default function Home() {
     }
     loadProducts();
   }, []);
-  let products = [];
-  let error = null;
-
-  try {
-    const data = await fetchProducts();
-    products = data.products || [];
-  } catch (e: any) {
-    error = e.message;
-  }
 
   return (
     <div className="min-h-screen" style={{ backgroundColor: '#F5EDE2' }}>

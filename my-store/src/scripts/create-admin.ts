@@ -1,5 +1,5 @@
 import { ExecArgs } from "@medusajs/framework/types"
-import { ContainerRegistrationKeys } from "@medusajs/framework/utils"
+import { ContainerRegistrationKeys, Modules } from "@medusajs/framework/utils"
 
 export default async function createAdmin({ container }: ExecArgs) {
   const logger = container.resolve(ContainerRegistrationKeys.LOGGER)
@@ -8,59 +8,36 @@ export default async function createAdmin({ container }: ExecArgs) {
   const password = process.env.MEDUSA_ADMIN_PASSWORD
   
   if (!email || !password) {
-    logger.warn("MEDUSA_ADMIN_EMAIL and MEDUSA_ADMIN_PASSWORD environment variables are not set. Skipping admin user creation.")
+    logger.warn("MEDUSA_ADMIN_EMAIL and MEDUSA_ADMIN_PASSWORD environment variables are not set.")
     logger.info("")
-    logger.info("To create an admin user, you can:")
-    logger.info("1. Set MEDUSA_ADMIN_EMAIL and MEDUSA_ADMIN_PASSWORD environment variables")
-    logger.info("2. Or use the admin dashboard UI to create an account")
-    logger.info("3. Or call POST /admin/create-admin with email and password")
+    logger.info("To create an admin user:")
+    logger.info("1. Go to your admin dashboard: https://your-backend.onrender.com/app")
+    logger.info("2. Create an account using the signup form")
     logger.info("")
     return
   }
   
   try {
-    logger.info(`Attempting to create admin user with email: ${email}`)
-    
-    // Use the query service to check if user exists
-    const query = container.resolve(ContainerRegistrationKeys.QUERY)
-    
-    // Check if auth identity already exists
-    const { data: existingAuth } = await query.graph({
-      entity: "auth_identity",
-      fields: ["id", "entity_id"],
-      filters: {
-        entity_id: email,
-        provider: "emailpass",
-      } as any,
-    })
-    
-    if (existingAuth && existingAuth.length > 0) {
-      logger.info(`✅ Admin user with email ${email} already exists. Skipping creation.`)
-      return
-    }
+    logger.info(`Creating admin user: ${email}`)
     
     // Get auth module service
-    const authModuleService = container.resolve("authService") as any
+    const authModuleService = container.resolve(Modules.AUTH) as any
     
-    // Create admin user
-    const adminUser = await authModuleService.createAuthIdentities({
+    // Try to create the admin user directly
+    await authModuleService.createAuthIdentities({
       provider: "emailpass",
       entity_id: email,
       provider_metadata: {
         email: email,
         password: password,
       } as any,
-      user_metadata: {
-        role: "admin",
-      } as any,
     } as any)
     
     logger.info("")
     logger.info("=".repeat(60))
-    logger.info("✅ ADMIN USER CREATED")
+    logger.info("✅ ADMIN USER CREATED SUCCESSFULLY")
     logger.info("=".repeat(60))
     logger.info(`Email: ${email}`)
-    logger.info(`Role: admin`)
     logger.info("")
     logger.info("You can now log in to the admin dashboard.")
     logger.info("=".repeat(60))
@@ -71,15 +48,17 @@ export default async function createAdmin({ container }: ExecArgs) {
     
     // Check if user already exists
     if (errorMsg.includes("already exists") || errorMsg.includes("duplicate") || errorMsg.includes("unique constraint")) {
-      logger.info(`✅ Admin user with email ${email} already exists. Skipping creation.`)
+      logger.info(`ℹ️  Admin user already exists: ${email}`)
+      logger.info("You can log in to the admin dashboard with your existing credentials.")
       return
     }
     
-    logger.error(`Error creating admin user: ${errorMsg}`)
+    // Log the error but don't fail the startup
+    logger.warn(`Could not auto-create admin user: ${errorMsg}`)
     logger.info("")
-    logger.info("Note: Admin user creation failed. You can:")
-    logger.info("1. Try accessing the admin dashboard and creating an account through the UI")
-    logger.info("2. Or call POST /admin/create-admin with email and password")
+    logger.info("Please create an admin account manually:")
+    logger.info("1. Go to your admin dashboard: /app")
+    logger.info("2. Sign up using the form")
     logger.info("")
   }
 }

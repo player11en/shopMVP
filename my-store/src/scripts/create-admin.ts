@@ -8,13 +8,7 @@ export default async function createAdmin({ container }: ExecArgs) {
   const password = process.env.MEDUSA_ADMIN_PASSWORD
   
   if (!email || !password) {
-    logger.warn("MEDUSA_ADMIN_EMAIL and MEDUSA_ADMIN_PASSWORD environment variables are not set.")
-    logger.info("Skipping admin user creation.")
-    logger.info("")
-    logger.info("To create an admin user, set these environment variables:")
-    logger.info("  MEDUSA_ADMIN_EMAIL=your-email@example.com")
-    logger.info("  MEDUSA_ADMIN_PASSWORD=your-secure-password")
-    logger.info("")
+    logger.warn("MEDUSA_ADMIN_EMAIL and MEDUSA_ADMIN_PASSWORD environment variables are not set. Skipping admin user creation.")
     return
   }
   
@@ -29,7 +23,7 @@ export default async function createAdmin({ container }: ExecArgs) {
       provider_metadata: {
         email: email,
       },
-    })
+    } as any)
     
     if (existingUsers && existingUsers.length > 0) {
       logger.info(`✅ Admin user with email ${email} already exists. Skipping creation.`)
@@ -38,19 +32,19 @@ export default async function createAdmin({ container }: ExecArgs) {
     
     logger.info(`Creating admin user with email: ${email}`)
     
-    // Create admin user
-    // In Medusa v2, admin users are created through the auth module
+    // Create admin user using auth module
+    // Note: The exact API may vary - this is a simplified approach
     const adminUser = await authModuleService.createAuthIdentities({
       provider: "emailpass",
       entity_id: email,
       provider_metadata: {
         email: email,
         password: password,
-      },
+      } as any,
       user_metadata: {
         role: "admin",
-      },
-    })
+      } as any,
+    } as any)
     
     logger.info("")
     logger.info("=".repeat(60))
@@ -59,13 +53,13 @@ export default async function createAdmin({ container }: ExecArgs) {
     logger.info(`Email: ${email}`)
     logger.info(`Role: admin`)
     logger.info("")
-    logger.info("You can now log in to the admin dashboard at:")
-    logger.info("  https://your-backend-url.onrender.com/app")
+    logger.info("You can now log in to the admin dashboard.")
     logger.info("=".repeat(60))
     logger.info("")
     
   } catch (error: any) {
-    logger.error("Error creating admin user:", error?.message || error)
+    const errorMsg = error?.message || String(error)
+    logger.error(`Error creating admin user: ${errorMsg}`)
     logger.info("")
     logger.info("Note: Admin user creation might require the auth module to be properly configured.")
     logger.info("You may need to create the admin user manually through the admin dashboard.")

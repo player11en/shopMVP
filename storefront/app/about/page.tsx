@@ -102,33 +102,33 @@ export default function AboutPage() {
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
               </svg>
               <div>
-                <h4 className="font-semibold text-gray-900 mb-1">Quality Guaranteed</h4>
-                <p className="text-gray-600 text-sm">Every project meets our high standards for detail and precision.</p>
+                <h4 className="font-semibold mb-1" style={{ color: '#2A2623' }}>Quality Guaranteed</h4>
+                <p className="text-sm" style={{ color: '#7A2E2C' }}>Every project meets our high standards for detail and precision.</p>
               </div>
             </div>
 
             <div className="flex items-start gap-3">
-              <svg className="w-6 h-6 text-green-600 flex-shrink-0 mt-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <svg className="w-6 h-6 flex-shrink-0 mt-1" style={{ color: '#B64845' }} fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
               </svg>
               <div>
-                <h4 className="font-semibold text-gray-900 mb-1">Fast Turnaround</h4>
-                <p className="text-gray-600 text-sm">We deliver projects on time without compromising quality.</p>
+                <h4 className="font-semibold mb-1" style={{ color: '#2A2623' }}>Fast Turnaround</h4>
+                <p className="text-sm" style={{ color: '#7A2E2C' }}>We deliver projects on time without compromising quality.</p>
               </div>
             </div>
 
             <div className="flex items-start gap-3">
-              <svg className="w-6 h-6 text-green-600 flex-shrink-0 mt-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <svg className="w-6 h-6 flex-shrink-0 mt-1" style={{ color: '#B64845' }} fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
               </svg>
               <div>
-                <h4 className="font-semibold text-gray-900 mb-1">Expert Support</h4>
-                <p className="text-gray-600 text-sm">Our team is here to help throughout your project.</p>
+                <h4 className="font-semibold mb-1" style={{ color: '#2A2623' }}>Expert Support</h4>
+                <p className="text-sm" style={{ color: '#7A2E2C' }}>Our team is here to help throughout your project.</p>
               </div>
             </div>
 
             <div className="flex items-start gap-3">
-              <svg className="w-6 h-6 text-green-600 flex-shrink-0 mt-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <svg className="w-6 h-6 flex-shrink-0 mt-1" style={{ color: '#B64845' }} fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
               </svg>
               <div>

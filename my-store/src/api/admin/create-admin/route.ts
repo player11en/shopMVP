@@ -1,5 +1,5 @@
 import { MedusaRequest, MedusaResponse } from "@medusajs/framework/http"
-import { createAuthUsersWorkflow } from "@medusajs/medusa/core-flows"
+import { createUsersWorkflow } from "@medusajs/medusa/core-flows"
 
 export async function POST(
   req: MedusaRequest,
@@ -11,9 +11,9 @@ export async function POST(
     const adminEmail = email || process.env.MEDUSA_ADMIN_EMAIL || "admin@medusa-test.com"
     const adminPassword = password || process.env.MEDUSA_ADMIN_PASSWORD || "supersecret"
     
-    const { result } = await createAuthUsersWorkflow(req.scope).run({
+    const { result } = await createUsersWorkflow(req.scope).run({
       input: {
-        auth_users: [
+        users: [
           {
             email: adminEmail,
             password: adminPassword,

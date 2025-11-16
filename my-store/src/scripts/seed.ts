@@ -6,7 +6,7 @@ import {
 } from "@medusajs/framework/utils";
 import {
   createApiKeysWorkflow,
-  createAuthUsersWorkflow,
+  createUsersWorkflow,
   createInventoryLevelsWorkflow,
   createProductCategoriesWorkflow,
   createProductsWorkflow,
@@ -69,9 +69,9 @@ export default async function seedDemoData({ container }: ExecArgs) {
     const email = process.env.MEDUSA_ADMIN_EMAIL || "admin@medusa-test.com";
     const password = process.env.MEDUSA_ADMIN_PASSWORD || "supersecret";
     
-    const { result } = await createAuthUsersWorkflow(container).run({
+    const { result } = await createUsersWorkflow(container).run({
       input: {
-        auth_users: [
+        users: [
           {
             email,
             password,

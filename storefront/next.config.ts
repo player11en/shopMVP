@@ -31,6 +31,18 @@ const nextConfig: NextConfig = {
         protocol: "https",
         hostname: "medusa-backend-e42r.onrender.com",
       },
+      {
+        protocol: "https",
+        hostname: "playereleven.de",
+      },
+      {
+        protocol: "https",
+        hostname: "raw.githubusercontent.com",
+      },
+      {
+        protocol: "https",
+        hostname: "**.githubusercontent.com",
+      },
     ],
   },
 };

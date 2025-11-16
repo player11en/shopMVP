@@ -1,8 +1,25 @@
-import Link from "next/link";
-import { fetchProducts } from "@/lib/medusa";
-import Image from "next/image";
+"use client";
 
-export default async function Home() {
+import Link from "next/link";
+import { useEffect, useState } from "react";
+import Image from "next/image";
+import { fetchProducts } from "@/lib/medusa";
+
+export default function Home() {
+  const [products, setProducts] = useState<any[]>([]);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    async function loadProducts() {
+      try {
+        const data = await fetchProducts();
+        setProducts(data.products || []);
+      } catch (e: any) {
+        setError(e.message);
+      }
+    }
+    loadProducts();
+  }, []);
   let products = [];
   let error = null;
 

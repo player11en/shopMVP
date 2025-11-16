@@ -4,7 +4,7 @@ import { ContainerRegistrationKeys, Modules } from "@medusajs/framework/utils"
 export async function POST(req: MedusaRequest, res: MedusaResponse) {
   const logger = req.scope.resolve(ContainerRegistrationKeys.LOGGER)
   
-  const { email, password } = req.body
+  const { email, password } = req.body as { email: string; password: string }
   
   if (!email || !password) {
     return res.status(400).json({ 

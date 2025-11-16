@@ -13,27 +13,13 @@ export default async function createAdmin({ container }: ExecArgs) {
   }
   
   try {
-    logger.info("Checking for existing admin users...")
+    logger.info(`Creating admin user with email: ${email}`)
     
     // Get auth module service
     const authModuleService = container.resolve(Modules.AUTH) as any
     
-    // Check if admin user already exists
-    const existingUsers = await authModuleService.listAuthIdentities({
-      provider_metadata: {
-        email: email,
-      },
-    } as any)
-    
-    if (existingUsers && existingUsers.length > 0) {
-      logger.info(`✅ Admin user with email ${email} already exists. Skipping creation.`)
-      return
-    }
-    
-    logger.info(`Creating admin user with email: ${email}`)
-    
-    // Create admin user using auth module
-    // Note: The exact API may vary - this is a simplified approach
+    // Try to create the admin user directly
+    // If it already exists, the error will be caught
     const adminUser = await authModuleService.createAuthIdentities({
       provider: "emailpass",
       entity_id: email,
@@ -59,10 +45,17 @@ export default async function createAdmin({ container }: ExecArgs) {
     
   } catch (error: any) {
     const errorMsg = error?.message || String(error)
+    
+    // Check if user already exists (common error messages)
+    if (errorMsg.includes("already exists") || errorMsg.includes("duplicate") || errorMsg.includes("unique constraint")) {
+      logger.info(`✅ Admin user with email ${email} already exists. Skipping creation.`)
+      return
+    }
+    
     logger.error(`Error creating admin user: ${errorMsg}`)
     logger.info("")
-    logger.info("Note: Admin user creation might require the auth module to be properly configured.")
-    logger.info("You may need to create the admin user manually through the admin dashboard.")
+    logger.info("Note: You may need to create the admin user manually.")
+    logger.info("Try accessing the admin dashboard and creating an account through the UI.")
     logger.info("")
   }
 }

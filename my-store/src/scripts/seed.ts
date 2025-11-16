@@ -6,6 +6,7 @@ import {
 } from "@medusajs/framework/utils";
 import {
   createApiKeysWorkflow,
+  createAuthUsersWorkflow,
   createInventoryLevelsWorkflow,
   createProductCategoriesWorkflow,
   createProductsWorkflow,
@@ -61,6 +62,41 @@ export default async function seedDemoData({ container }: ExecArgs) {
   const fulfillmentModuleService = container.resolve(Modules.FULFILLMENT);
   const salesChannelModuleService = container.resolve(Modules.SALES_CHANNEL);
   const storeModuleService = container.resolve(Modules.STORE);
+
+  // Create admin user if it doesn't exist
+  try {
+    logger.info("Checking for admin user...");
+    const email = process.env.MEDUSA_ADMIN_EMAIL || "admin@medusa-test.com";
+    const password = process.env.MEDUSA_ADMIN_PASSWORD || "supersecret";
+    
+    const { result } = await createAuthUsersWorkflow(container).run({
+      input: {
+        auth_users: [
+          {
+            email,
+            password,
+            provider_identities: [
+              {
+                entity_id: email,
+                provider: "emailpass",
+              },
+            ],
+          },
+        ],
+      },
+    });
+    
+    logger.info("✅ Admin user created/verified");
+    logger.info(`   Email: ${email}`);
+    logger.info(`   Password: ${password}`);
+    logger.info("");
+  } catch (error: any) {
+    if (error.message?.includes("already exists") || error.message?.includes("duplicate")) {
+      logger.info("✅ Admin user already exists");
+    } else {
+      logger.warn("Could not create admin user:", error?.message || error);
+    }
+  }
 
   const countries = ["gb", "de", "dk", "se", "fr", "es", "it"];
 

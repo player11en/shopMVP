@@ -160,25 +160,40 @@ export default function Home() {
                 className="rounded-lg shadow-md overflow-hidden hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1"
                 style={{ backgroundColor: '#FBF7F1' }}
               >
-                {product.thumbnail && (
-                  <div className="relative w-full h-64" style={{ backgroundColor: '#F5EDE2' }}>
-                    {product.thumbnail?.includes('localhost:9000') ? (
-                      <img
-                        src={product.thumbnail}
-                        alt={product.title}
-                        className="w-full h-full object-cover"
-                      />
-                    ) : (
-                      <Image
-                        src={product.thumbnail}
-                        alt={product.title}
-                        fill
-                        className="object-cover"
-                        sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 25vw"
-                      />
-                    )}
-                  </div>
-                )}
+                {(() => {
+                  // Get image URL: prefer thumbnail, fallback to first image
+                  const imageUrl = product.thumbnail || (product.images && product.images.length > 0 ? product.images[0].url : null);
+                  
+                  if (!imageUrl) {
+                    return (
+                      <div className="relative w-full h-64 flex items-center justify-center" style={{ backgroundColor: '#F5EDE2' }}>
+                        <svg className="w-16 h-16" style={{ color: '#C7BFB6' }} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                        </svg>
+                      </div>
+                    );
+                  }
+                  
+                  return (
+                    <div className="relative w-full h-64" style={{ backgroundColor: '#F5EDE2' }}>
+                      {imageUrl.includes('localhost:9000') ? (
+                        <img
+                          src={imageUrl}
+                          alt={product.title}
+                          className="w-full h-full object-cover"
+                        />
+                      ) : (
+                        <Image
+                          src={imageUrl}
+                          alt={product.title}
+                          fill
+                          className="object-cover"
+                          sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 25vw"
+                        />
+                      )}
+                    </div>
+                  );
+                })()}
                 <div className="p-4">
                   <h3 className="text-lg font-semibold mb-2 line-clamp-1" style={{ color: '#2A2623' }}>
                     {product.title}

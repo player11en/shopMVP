@@ -53,7 +53,8 @@ async function medusaFetch(path: string, init: RequestInit = {}) {
 // API helper functions
 export async function fetchProducts() {
   try {
-    const response = await fetch(`${MEDUSA_BACKEND_URL}/store/products`, {
+    // Request products with images included
+    const response = await fetch(`${MEDUSA_BACKEND_URL}/store/products?fields=*images`, {
       headers: {
         "x-publishable-api-key": MEDUSA_API_KEY,
       },

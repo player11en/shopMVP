@@ -1,59 +1,75 @@
 import { ExecArgs } from "@medusajs/framework/types"
-import { ContainerRegistrationKeys } from "@medusajs/framework/utils"
-import { createUsersWorkflow } from "@medusajs/medusa/core-flows"
+import { ContainerRegistrationKeys, Modules } from "@medusajs/framework/utils"
 
 export default async function createAdmin({ container }: ExecArgs) {
   const logger = container.resolve(ContainerRegistrationKeys.LOGGER)
   
+  const email = process.env.MEDUSA_ADMIN_EMAIL
+  const password = process.env.MEDUSA_ADMIN_PASSWORD
+  
+  if (!email || !password) {
+    logger.warn("MEDUSA_ADMIN_EMAIL and MEDUSA_ADMIN_PASSWORD environment variables are not set.")
+    logger.info("Skipping admin user creation.")
+    logger.info("")
+    logger.info("To create an admin user, set these environment variables:")
+    logger.info("  MEDUSA_ADMIN_EMAIL=your-email@example.com")
+    logger.info("  MEDUSA_ADMIN_PASSWORD=your-secure-password")
+    logger.info("")
+    return
+  }
+  
   try {
-    const email = process.env.MEDUSA_ADMIN_EMAIL || "admin@medusa-test.com"
-    const password = process.env.MEDUSA_ADMIN_PASSWORD || "supersecret"
+    logger.info("Checking for existing admin users...")
     
-    logger.info("Creating admin user...")
-    logger.info(`Email: ${email}`)
+    // Get auth module service
+    const authModuleService = container.resolve(Modules.AUTH) as any
     
-    const { result } = await createUsersWorkflow(container).run({
-      input: {
-        users: [
-          {
-            email,
-            password,
-            provider_identities: [
-              {
-                entity_id: email,
-                provider: "emailpass",
-              },
-            ],
-          },
-        ],
+    // Check if admin user already exists
+    const existingUsers = await authModuleService.listAuthIdentities({
+      provider_metadata: {
+        email: email,
       },
     })
     
-    const adminUser = result[0]
+    if (existingUsers && existingUsers.length > 0) {
+      logger.info(`✅ Admin user with email ${email} already exists. Skipping creation.`)
+      return
+    }
+    
+    logger.info(`Creating admin user with email: ${email}`)
+    
+    // Create admin user
+    // In Medusa v2, admin users are created through the auth module
+    const adminUser = await authModuleService.createAuthIdentities({
+      provider: "emailpass",
+      entity_id: email,
+      provider_metadata: {
+        email: email,
+        password: password,
+      },
+      user_metadata: {
+        role: "admin",
+      },
+    })
     
     logger.info("")
     logger.info("=".repeat(60))
     logger.info("✅ ADMIN USER CREATED")
     logger.info("=".repeat(60))
-    logger.info(`Email: ${adminUser.email}`)
-    logger.info(`Password: ${password}`)
+    logger.info(`Email: ${email}`)
+    logger.info(`Role: admin`)
     logger.info("")
-    logger.info("You can now login to the admin dashboard at:")
-    logger.info("https://medusa-backend-e42r.onrender.com/app")
-    logger.info("")
+    logger.info("You can now log in to the admin dashboard at:")
+    logger.info("  https://your-backend-url.onrender.com/app")
     logger.info("=".repeat(60))
     logger.info("")
     
-    return adminUser
   } catch (error: any) {
-    if (error.message?.includes("already exists") || error.message?.includes("duplicate")) {
-      logger.warn("Admin user already exists. Skipping creation.")
-      logger.info("")
-      logger.info("If you forgot your password, you can reset it via the admin dashboard.")
-      return null
-    }
     logger.error("Error creating admin user:", error?.message || error)
-    throw error
+    logger.info("")
+    logger.info("Note: Admin user creation might require the auth module to be properly configured.")
+    logger.info("You may need to create the admin user manually through the admin dashboard.")
+    logger.info("")
   }
 }
 

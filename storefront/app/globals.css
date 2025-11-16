@@ -15,18 +15,17 @@
 */
 
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  --background: #F5EDE2;
+  --foreground: #2A2623;
   
-  /* Custom Color Variables */
-  --greywhite: #E7ECEF;
-  --darkerblue: #274C77;
-  --lighterblue: #6096BA;
-  --skyblue: #A3CEF1;
-  --browngrey: #8B8C89;
-  --blackblueish: #34495e;
-  --dark: #373349;
-  --shadow: rgba(0, 0, 0, .2);
+  /* inn Brand Color Variables */
+  --crimson: #B64845;
+  --wine: #7A2E2C;
+  --charcoal: #2A2623;
+  --sand: #F5EDE2;
+  --ivory: #FBF7F1;
+  --taupe: #C7BFB6;
+  --shadow: rgba(122, 46, 44, 0.15);
   
   /* Font Awesome Variables */
   --fa-style-family-classic: "Font Awesome 6 Free";
@@ -65,7 +64,7 @@
 }
 
 body {
-  background: var(--background);
-  color: var(--foreground);
+  background: var(--sand);
+  color: var(--charcoal);
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen', 'Ubuntu', 'Cantarell', sans-serif;
 }

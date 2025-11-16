@@ -8,7 +8,7 @@ export default function Header() {
   const [menuOpen, setMenuOpen] = useState(false);
 
   return (
-    <header className="bg-white shadow-md sticky top-0 z-50">
+    <header className="shadow-md sticky top-0 z-50" style={{ backgroundColor: '#FBF7F1' }}>
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between items-center py-4">
           {/* Logo and Brand */}
@@ -22,8 +22,8 @@ export default function Header() {
               />
             </div>
             <div className="flex flex-col">
-              <span className="text-xl font-bold text-gray-900">inn 3D</span>
-              <span className="text-xs text-gray-600 hidden sm:block">
+              <span className="text-xl font-bold" style={{ color: '#2A2623' }}>inn 3D</span>
+              <span className="text-xs hidden sm:block" style={{ color: '#7A2E2C' }}>
                 Druck und Modellierung
               </span>
             </div>
@@ -33,19 +33,28 @@ export default function Header() {
           <nav className="hidden md:flex items-center gap-6">
             <Link
               href="/products"
-              className="text-gray-700 hover:text-blue-600 transition-colors font-medium"
+              className="transition-colors font-medium"
+              style={{ color: '#7A2E2C' }}
+              onMouseEnter={(e) => e.currentTarget.style.color = '#B64845'}
+              onMouseLeave={(e) => e.currentTarget.style.color = '#7A2E2C'}
             >
               Products
             </Link>
             <Link
               href="/about"
-              className="text-gray-700 hover:text-blue-600 transition-colors font-medium"
+              className="transition-colors font-medium"
+              style={{ color: '#7A2E2C' }}
+              onMouseEnter={(e) => e.currentTarget.style.color = '#B64845'}
+              onMouseLeave={(e) => e.currentTarget.style.color = '#7A2E2C'}
             >
               About
             </Link>
             <Link
               href="/cart"
-              className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium shadow-sm hover:shadow-md"
+              className="px-6 py-2 text-white rounded-lg transition-colors font-medium shadow-sm hover:shadow-md"
+              style={{ backgroundColor: '#B64845' }}
+              onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#7A2E2C'}
+              onMouseLeave={(e) => e.currentTarget.style.backgroundColor = '#B64845'}
             >
               Cart
             </Link>
@@ -54,7 +63,10 @@ export default function Header() {
           {/* Mobile Menu Button */}
           <button
             onClick={() => setMenuOpen(!menuOpen)}
-            className="md:hidden p-2 rounded-lg hover:bg-gray-100 transition-colors"
+            className="md:hidden p-2 rounded-lg transition-colors"
+            style={{ color: '#2A2623' }}
+            onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#F5EDE2'}
+            onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
           >
             <svg
               className="w-6 h-6"
@@ -83,25 +95,34 @@ export default function Header() {
 
         {/* Mobile Menu */}
         {menuOpen && (
-          <div className="md:hidden py-4 border-t">
+          <div className="md:hidden py-4" style={{ borderTop: '1px solid #C7BFB6' }}>
             <nav className="flex flex-col gap-3">
               <Link
                 href="/products"
-                className="px-4 py-2 text-gray-700 hover:bg-gray-100 rounded-lg transition-colors"
+                className="px-4 py-2 rounded-lg transition-colors"
+                style={{ color: '#7A2E2C' }}
+                onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#F5EDE2'}
+                onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
                 onClick={() => setMenuOpen(false)}
               >
                 Products
               </Link>
               <Link
                 href="/about"
-                className="px-4 py-2 text-gray-700 hover:bg-gray-100 rounded-lg transition-colors"
+                className="px-4 py-2 rounded-lg transition-colors"
+                style={{ color: '#7A2E2C' }}
+                onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#F5EDE2'}
+                onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
                 onClick={() => setMenuOpen(false)}
               >
                 About
               </Link>
               <Link
                 href="/cart"
-                className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-center"
+                className="px-4 py-2 text-white rounded-lg transition-colors text-center"
+                style={{ backgroundColor: '#B64845' }}
+                onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#7A2E2C'}
+                onMouseLeave={(e) => e.currentTarget.style.backgroundColor = '#B64845'}
                 onClick={() => setMenuOpen(false)}
               >
                 Cart

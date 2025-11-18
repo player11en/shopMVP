@@ -217,14 +217,9 @@ export default async function ProductPage({
                   </h2>
                   <div className="space-y-2">
                     {product.variants.map((variant: any) => {
-                      // Debug: Log variant data - show everything
-                      console.log('=== VARIANT DEBUG ===');
-                      console.log('Variant ID:', variant.id);
-                      console.log('Variant Title:', variant.title);
-                      console.log('Product Metadata:', product.metadata);
-                      console.log('Is Digital:', metadata.product_type === 'digital' || metadata.is_digital === 'true');
-                      console.log('Is Free:', isFreeVariant);
-                      console.log('===================');
+                      // Get metadata first
+                      const metadata = product.metadata || {};
+                      const isDigital = metadata.product_type === 'digital' || metadata.is_digital === 'true';
                       
                       // Get price from variant - Medusa stores prices in cents
                       // Check multiple possible price locations
@@ -248,8 +243,15 @@ export default async function ProductPage({
                       const hasPrice = variantPrice > 0 || (variant.prices && variant.prices.length > 0) || variant.calculated_price;
                       const isFreeVariant = hasPrice && variantPrice === 0;
                       
-                      const metadata = product.metadata || {};
-                      const isDigital = metadata.product_type === 'digital' || metadata.is_digital === 'true';
+                      // Debug: Log variant data - show everything
+                      console.log('=== VARIANT DEBUG ===');
+                      console.log('Variant ID:', variant.id);
+                      console.log('Variant Title:', variant.title);
+                      console.log('Product Metadata:', metadata);
+                      console.log('Is Digital:', isDigital);
+                      console.log('Is Free:', isFreeVariant);
+                      console.log('Price:', variantPrice);
+                      console.log('===================');
                       
                       // Format price: calculated_amount is already in correct format (10 = €10), not cents
                       // But if it's very large (> 1000), it might be in cents, so check

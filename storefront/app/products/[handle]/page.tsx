@@ -216,23 +216,19 @@ export default async function ProductPage({
                   </h2>
                   <div className="space-y-2">
                     {product.variants.map((variant: any) => {
+                      // Debug: Log variant data - show everything
+                      console.log('=== VARIANT DEBUG ===');
+                      console.log('Variant ID:', variant.id);
+                      console.log('Variant Title:', variant.title);
+                      console.log('Variant ID type:', typeof variant.id);
+                      console.log('Variant ID truthy?', !!variant.id);
+                      console.log('All Variant Keys:', Object.keys(variant));
+                      console.log('===================');
+                      
                       // Get price from variant - Medusa stores prices in cents
                       // Check multiple possible price locations
                       let variantPrice = 0;
                       let currencyCode = 'usd';
-                      
-                      // Debug: Log variant data - show everything
-                      if (process.env.NODE_ENV === 'development') {
-                        console.log('=== VARIANT DEBUG ===');
-                        console.log('Variant ID:', variant.id);
-                        console.log('Variant Title:', variant.title);
-                        console.log('All Variant Keys:', Object.keys(variant));
-                        console.log('variant.prices:', variant.prices);
-                        console.log('variant.calculated_price:', variant.calculated_price);
-                        console.log('variant.price:', variant.price);
-                        console.log('Full Variant Object:', JSON.stringify(variant, null, 2));
-                        console.log('===================');
-                      }
                       
                       // Get price from calculated_price (Medusa v2 standard way)
                       if (variant.calculated_price) {

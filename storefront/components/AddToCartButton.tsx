@@ -77,7 +77,7 @@ export function AddToCartButton({ variantId }: { variantId: string }) {
     console.error("❌ AddToCartButton: variantId is missing!");
     return (
       <div>
-        <button disabled className="px-4 py-2 text-gray-400 rounded-md cursor-not-allowed">
+        <button disabled className="px-4 py-2 text-gray-400 rounded-md cursor-not-allowed opacity-50">
           <i className="fas fa-exclamation-triangle mr-2"></i>Variant ID missing
         </button>
       </div>
@@ -94,11 +94,13 @@ export function AddToCartButton({ variantId }: { variantId: string }) {
           handleAddToCart();
         }}
         disabled={loading}
-        className="px-4 py-2 text-white rounded-md hover:opacity-90 transition-opacity disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
+        className="px-4 py-2 text-white rounded-md hover:opacity-90 transition-opacity cursor-pointer font-medium"
         style={{ 
           backgroundColor: loading ? '#C7BFB6' : '#B64845',
           color: '#FFFFFF',
-          border: 'none'
+          border: 'none',
+          opacity: loading ? 0.6 : 1,
+          cursor: loading ? 'not-allowed' : 'pointer'
         }}
       >
         {loading ? (

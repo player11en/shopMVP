@@ -53,8 +53,9 @@ async function medusaFetch(path: string, init: RequestInit = {}) {
 // API helper functions
 export async function fetchProducts() {
   try {
-    // Request products with images included
-    const response = await fetch(`${MEDUSA_BACKEND_URL}/store/products?fields=*images`, {
+    // Use medusaFetch to go through proxy (handles CORS automatically)
+    const response = await medusaFetch(`/store/products?fields=*images`, {
+      method: 'GET',
       headers: {
         "x-publishable-api-key": MEDUSA_API_KEY,
       },
@@ -102,12 +103,14 @@ export async function fetchProduct(handle: string) {
     const regionId = await getDefaultRegion();
     
     // Build URL with fields parameter for calculated_price
-    let url = `${MEDUSA_BACKEND_URL}/store/products?handle=${handle}&fields=*variants.calculated_price`;
+    // Use medusaFetch to go through proxy (handles CORS automatically)
+    let url = `/store/products?handle=${handle}&fields=*variants.calculated_price,images`;
     if (regionId) {
       url += `&region_id=${regionId}`;
     }
     
-    const response = await fetch(url, {
+    const response = await medusaFetch(url, {
+      method: 'GET',
       headers: {
         "x-publishable-api-key": MEDUSA_API_KEY,
       },

@@ -17,15 +17,28 @@ export async function OPTIONS(req: NextRequest) {
   });
 }
 
-// Handle GET requests
+// Handle GET requests (for testing/debugging)
 export async function GET(req: NextRequest) {
   const searchParams = req.nextUrl.searchParams;
   const path = searchParams.get("path");
+  
+  // If no path provided, return helpful error message
+  if (!path) {
+    return NextResponse.json(
+      {
+        message: "Proxy path is required",
+        usage: "Use POST method with JSON body: { path, method, headers, body }",
+        example: "POST /api/medusa-proxy with body: { \"path\": \"/store/products\", \"method\": \"GET\", \"headers\": {}, \"body\": null }"
+      },
+      { status: 400 }
+    );
+  }
+  
   const method = searchParams.get("method") || "GET";
   const headers = JSON.parse(searchParams.get("headers") || "{}");
   
   return handleProxyRequest({
-    path: path || "",
+    path,
     method,
     headers,
     body: null,
@@ -35,13 +48,28 @@ export async function GET(req: NextRequest) {
 // Handle POST requests
 export async function POST(req: NextRequest) {
   try {
-    const { path, method = "GET", headers = {}, body = null } = await req.json();
+    const requestBody = await req.json();
+    const { path, method = "GET", headers = {}, body = null } = requestBody;
+    
+    // Validate path is provided
+    if (!path) {
+      return NextResponse.json(
+        {
+          message: "Proxy path is required",
+          received: requestBody,
+          usage: "POST body must include: { path: '/store/products', method: 'GET', headers: {}, body: null }"
+        },
+        { status: 400 }
+      );
+    }
+    
     return handleProxyRequest({ path, method, headers, body }, req);
   } catch (error: any) {
     return NextResponse.json(
       {
         message: "Invalid request body",
         error: error.message,
+        usage: "POST body must be valid JSON: { path: '/store/products', method: 'GET', headers: {}, body: null }"
       },
       { status: 400 }
     );

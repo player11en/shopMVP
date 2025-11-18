@@ -366,6 +366,7 @@ function CheckoutContent() {
 
       // Step 2: If free cart, skip payment and complete directly
       if (isFreeCart) {
+        console.log("🎁 Free cart detected - completing order directly");
         await handleCompleteOrder();
         return;
       }

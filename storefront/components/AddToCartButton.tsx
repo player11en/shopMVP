@@ -7,6 +7,9 @@ export function AddToCartButton({ variantId }: { variantId: string }) {
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState("");
 
+  // Debug: Log when component renders
+  console.log("🔘 AddToCartButton rendered with variantId:", variantId);
+
   const handleAddToCart = async () => {
     setLoading(true);
     setMessage("");
@@ -69,10 +72,27 @@ export function AddToCartButton({ variantId }: { variantId: string }) {
     }
   };
 
+  // Check if variantId is missing
+  if (!variantId) {
+    console.error("❌ AddToCartButton: variantId is missing!");
+    return (
+      <div>
+        <button disabled className="px-4 py-2 text-gray-400 rounded-md cursor-not-allowed">
+          <i className="fas fa-exclamation-triangle mr-2"></i>Variant ID missing
+        </button>
+      </div>
+    );
+  }
+
   return (
     <div>
       <button
-        onClick={handleAddToCart}
+        onClick={(e) => {
+          console.log("🖱️ Button clicked!", { variantId, event: e });
+          e.preventDefault();
+          e.stopPropagation();
+          handleAddToCart();
+        }}
         disabled={loading}
         className="px-4 py-2 text-white rounded-md hover:opacity-90 transition-opacity disabled:opacity-50 disabled:cursor-not-allowed"
         style={{ backgroundColor: loading ? 'var(--browngrey)' : 'var(--lighterblue)' }}

@@ -33,16 +33,37 @@ export async function POST(req: NextRequest) {
     }
 
     const response = await fetch(targetUrl, fetchInit)
-    const responseBody = await response.arrayBuffer()
+    
+    // Get content type to handle response properly
+    const contentType = response.headers.get("content-type") || ""
+    const isJson = contentType.includes("application/json")
+    
+    // Handle response body based on content type
+    let responseBody: BodyInit
+    if (isJson) {
+      responseBody = JSON.stringify(await response.json())
+    } else {
+      responseBody = await response.text()
+    }
 
     const nextResponse = new NextResponse(responseBody, {
       status: response.status,
       statusText: response.statusText,
     })
 
+    // Copy headers but exclude content-encoding to avoid decoding issues
     response.headers.forEach((value, key) => {
-      nextResponse.headers.set(key, value)
+      const lowerKey = key.toLowerCase()
+      // Skip content-encoding and content-length as we're handling the body ourselves
+      if (lowerKey !== "content-encoding" && lowerKey !== "content-length") {
+        nextResponse.headers.set(key, value)
+      }
     })
+
+    // Set content type if JSON
+    if (isJson) {
+      nextResponse.headers.set("Content-Type", "application/json")
+    }
 
     if (!nextResponse.headers.has("Access-Control-Allow-Origin")) {
       nextResponse.headers.set("Access-Control-Allow-Origin", "*")

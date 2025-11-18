@@ -180,6 +180,7 @@ function CheckoutContent() {
   const [processing, setProcessing] = useState(false);
   const [paymentSessionData, setPaymentSessionData] = useState<any>(null);
   const [showStripeForm, setShowStripeForm] = useState(false);
+  const [bankTransferDetails, setBankTransferDetails] = useState<any>(null);
   const [availableCountries, setAvailableCountries] = useState<string[]>([]);
   const [formData, setFormData] = useState({
     email: "",
@@ -374,15 +375,28 @@ function CheckoutContent() {
       if (selectedProvider) {
         await selectPaymentSession(cartId, selectedProvider);
         
-        // If Stripe, get payment session data and show card form
-        if (selectedProvider.includes('stripe')) {
-          const sessionData = await getPaymentSession(cartId);
-          const stripeSession = sessionData.payment_sessions?.find((ps: any) => ps.provider_id === selectedProvider);
-          if (stripeSession?.data?.client_secret) {
-            setPaymentSessionData(stripeSession);
+        // Get payment session data
+        const sessionData = await getPaymentSession(cartId);
+        const paymentSession = sessionData.payment_sessions?.find((ps: any) => ps.provider_id === selectedProvider);
+        
+        if (paymentSession) {
+          // If Stripe, show card form
+          if (selectedProvider.includes('stripe') && paymentSession.data?.client_secret) {
+            setPaymentSessionData(paymentSession);
             setShowStripeForm(true);
+            setBankTransferDetails(null);
             setProcessing(false);
             return;
+          }
+          // If Bank Transfer, show bank details
+          else if (selectedProvider === 'bank_transfer' && paymentSession.data) {
+            setBankTransferDetails(paymentSession.data);
+            setShowStripeForm(false);
+            setPaymentSessionData(null);
+          } else {
+            setShowStripeForm(false);
+            setBankTransferDetails(null);
+            setPaymentSessionData(null);
           }
         }
         } else {
@@ -705,7 +719,24 @@ function CheckoutContent() {
                             name="paymentProvider"
                             value={provider.id}
                             checked={selectedProvider === provider.id}
-                            onChange={(e) => setSelectedProvider(e.target.value)}
+                            onChange={async (e) => {
+                              setSelectedProvider(e.target.value);
+                              // When bank transfer is selected, fetch and show bank details
+                              if (e.target.value === 'bank_transfer' && cartId) {
+                                try {
+                                  await selectPaymentSession(cartId, 'bank_transfer');
+                                  const sessionData = await getPaymentSession(cartId);
+                                  const bankSession = sessionData.payment_sessions?.find((ps: any) => ps.provider_id === 'bank_transfer');
+                                  if (bankSession?.data) {
+                                    setBankTransferDetails(bankSession.data);
+                                  }
+                                } catch (err) {
+                                  console.error('Error loading bank transfer details:', err);
+                                }
+                              } else {
+                                setBankTransferDetails(null);
+                              }
+                            }}
                             className="mr-3"
                           />
                           <div>
@@ -761,6 +792,58 @@ function CheckoutContent() {
                     </ol>
                     <br />
                     <strong>Check browser console (F12) for detailed error messages.</strong>
+                  </div>
+                )}
+
+                {/* Bank Transfer Details */}
+                {bankTransferDetails && selectedProvider === 'bank_transfer' && (
+                  <div className="mt-4 p-4 border rounded-md" style={{ borderColor: '#C7BFB6', backgroundColor: '#FBF7F1' }}>
+                    <h3 className="font-semibold mb-3" style={{ color: '#7A2E2C' }}>
+                      <i className="fas fa-university mr-2"></i>Bank Transfer Instructions
+                    </h3>
+                    {bankTransferDetails.instructions && (
+                      <p className="mb-3 text-sm" style={{ color: '#2A2623' }}>
+                        {bankTransferDetails.instructions}
+                      </p>
+                    )}
+                    <div className="space-y-2 text-sm" style={{ color: '#2A2623' }}>
+                      {bankTransferDetails.bankName && (
+                        <div>
+                          <strong>Bank Name:</strong> {bankTransferDetails.bankName}
+                        </div>
+                      )}
+                      {bankTransferDetails.accountNumber && (
+                        <div>
+                          <strong>Account Number:</strong> {bankTransferDetails.accountNumber}
+                        </div>
+                      )}
+                      {bankTransferDetails.routingNumber && (
+                        <div>
+                          <strong>Routing Number:</strong> {bankTransferDetails.routingNumber}
+                        </div>
+                      )}
+                      {bankTransferDetails.iban && (
+                        <div>
+                          <strong>IBAN:</strong> {bankTransferDetails.iban}
+                        </div>
+                      )}
+                      {bankTransferDetails.swift && (
+                        <div>
+                          <strong>SWIFT:</strong> {bankTransferDetails.swift}
+                        </div>
+                      )}
+                      {bankTransferDetails.amount && (
+                        <div className="mt-3 pt-3 border-t" style={{ borderColor: '#C7BFB6' }}>
+                          <strong>Amount to Transfer:</strong> {bankTransferDetails.currency_code?.toUpperCase()} {bankTransferDetails.amount > 1000 ? (bankTransferDetails.amount / 100).toFixed(2) : bankTransferDetails.amount.toFixed(2)}
+                        </div>
+                      )}
+                    </div>
+                    <div className="mt-4 p-3 rounded" style={{ backgroundColor: '#F5EDE2' }}>
+                      <p className="text-xs" style={{ color: '#7A2E2C' }}>
+                        <i className="fas fa-info-circle mr-2"></i>
+                        After transferring the amount, your order will be confirmed manually. You'll receive a confirmation email once payment is received.
+                      </p>
+                    </div>
                   </div>
                 )}
 

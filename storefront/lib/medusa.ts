@@ -281,12 +281,14 @@ export async function getCart(cartId: string) {
   
   // Debug: Log cart structure to see metadata
   if (data.cart?.items) {
-    console.log('🛒 Cart items structure:', data.cart.items.map((item: any) => ({
+    if (process.env.NODE_ENV === 'development') {
+      console.log('Cart items structure:', data.cart.items.map((item: any) => ({
       title: item.title,
       hasVariant: !!item.variant,
       hasProduct: !!item.variant?.product,
       metadata: item.variant?.product?.metadata || item.product?.metadata || {},
     })));
+    }
   }
   
   return data;

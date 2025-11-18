@@ -226,7 +226,9 @@ function CheckoutContent() {
               if (formattedProviders.length > 0) {
                 setSelectedProvider(formattedProviders[0].id);
               }
-              console.log(`✅ Found ${formattedProviders.length} payment provider(s) from region:`, formattedProviders);
+              if (process.env.NODE_ENV === 'development') {
+                console.log(`Found ${formattedProviders.length} payment provider(s) from region:`, formattedProviders);
+              }
             }
           } catch (regionError) {
             console.warn("Could not load region payment providers:", regionError);
@@ -246,11 +248,11 @@ function CheckoutContent() {
         // If no providers from region, try payment sessions (legacy method)
         if (regionProviders.length === 0) {
         try {
-            console.log("🔄 Creating payment sessions for cart:", cartId);
+            if (process.env.NODE_ENV === 'development') {
+              console.log("Creating payment sessions for cart:", cartId);
+            }
           await createPaymentSession(cartId);
           const sessionData = await getPaymentSession(cartId);
-            
-            console.log("📦 Payment session data:", sessionData);
           
           if (sessionData.payment_sessions && sessionData.payment_sessions.length > 0) {
             // Extract unique providers from payment sessions
@@ -274,14 +276,16 @@ function CheckoutContent() {
             if (providers.length > 0) {
               setSelectedProvider(providers[0].id);
             }
-            console.log(`✅ Found ${providers.length} payment provider(s):`, providers);
+            if (process.env.NODE_ENV === 'development') {
+              console.log(`Found ${providers.length} payment provider(s):`, providers);
+            }
           } else {
-              console.error("❌ No payment sessions in response:", sessionData);
-              console.warn("⚠️ No payment sessions created - check if providers are added to region in admin");
+              console.error("No payment sessions in response:", sessionData);
+              console.warn("No payment sessions created - check if providers are added to region in admin");
           }
         } catch (sessionError: any) {
-            console.error("❌ Error creating payment sessions:", sessionError);
-            console.error("❌ Error details:", sessionError.message, sessionError.stack);
+            console.error("Error creating payment sessions:", sessionError);
+            console.error("Error details:", sessionError.message, sessionError.stack);
           // Continue without payment providers for now
           }
         }
@@ -300,8 +304,8 @@ function CheckoutContent() {
 
   // Check if all products are digital (no shipping needed)
   // Debug: Log cart items to see structure
-  if (cart?.items) {
-    console.log('🛒 Cart items for digital check:', cart.items.map((item: any) => ({
+  if (process.env.NODE_ENV === 'development' && cart?.items) {
+    console.log('Cart items for digital check:', cart.items.map((item: any) => ({
       title: item.title,
       variant: item.variant,
       product: item.product,
@@ -316,11 +320,15 @@ function CheckoutContent() {
                      item.metadata ||
                      {};
     const isDigital = metadata.product_type === 'digital' || metadata.is_digital === 'true';
-    console.log(`📦 Item "${item.title}": isDigital=${isDigital}`, { metadata });
+    if (process.env.NODE_ENV === 'development') {
+      console.log(`Item "${item.title}": isDigital=${isDigital}`, { metadata });
+    }
     return isDigital;
   }) || false;
   
-  console.log('✅ isDigitalOnly:', isDigitalOnly);
+  if (process.env.NODE_ENV === 'development') {
+    console.log('isDigitalOnly:', isDigitalOnly);
+  }
 
   // Handle payment setup (for Stripe, show card form)
   const handlePaymentSetup = async () => {
@@ -366,7 +374,9 @@ function CheckoutContent() {
 
       // Step 2: If free cart, skip payment and complete directly
       if (isFreeCart) {
-        console.log("🎁 Free cart detected - completing order directly");
+        if (process.env.NODE_ENV === 'development') {
+          console.log("Free cart detected - completing order directly");
+        }
         await handleCompleteOrder();
         return;
       }

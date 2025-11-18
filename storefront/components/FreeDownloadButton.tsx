@@ -134,18 +134,17 @@ export function FreeDownloadButton({ product, variant }: FreeDownloadButtonProps
 
   const downloadUrl = getDownloadUrl();
 
-  // Debug logging (only in development)
-  if (process.env.NODE_ENV === 'development') {
-    console.log('FreeDownloadButton Debug:', {
-      isFree,
-      isDigital,
-      hasDownloadUrl: !!downloadUrl,
-      downloadUrl,
-      metadata,
-      price,
-      hasPrice,
-    });
-  }
+  // Debug logging (always show for troubleshooting)
+  console.log('🔍 FreeDownloadButton Debug:', {
+    isFree,
+    isDigital,
+    hasDownloadUrl: !!downloadUrl,
+    downloadUrl,
+    metadata,
+    price,
+    hasPrice,
+    shouldShow: isFree && isDigital,
+  });
 
   // STRICT RULES: Download button ONLY shows if:
   // 1. Product is FREE (price === 0) AND

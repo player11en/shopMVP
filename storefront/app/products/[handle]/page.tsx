@@ -251,6 +251,7 @@ export default async function ProductPage({
                       console.log('Is Digital:', isDigital);
                       console.log('Is Free:', isFreeVariant);
                       console.log('Price:', variantPrice);
+                      console.log('Should show download button:', isFreeVariant && isDigital);
                       console.log('===================');
                       
                       // Format price: calculated_amount is already in correct format (10 = €10), not cents

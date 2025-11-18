@@ -264,9 +264,8 @@ export async function removeLineItem(cartId: string, lineItemId: string) {
 }
 
 export async function getCart(cartId: string) {
-  // Request cart with product relations to get metadata
-  // Use expand parameter to include full product data with metadata
-  const response = await fetch(`${MEDUSA_BACKEND_URL}/store/carts/${cartId}?expand=items.variant.product`, {
+  // Request cart - Medusa v2 includes relations by default
+  const response = await fetch(`${MEDUSA_BACKEND_URL}/store/carts/${cartId}`, {
     headers: {
       "x-publishable-api-key": MEDUSA_API_KEY,
     },

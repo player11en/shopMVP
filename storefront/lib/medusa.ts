@@ -35,8 +35,13 @@ async function medusaFetch(path: string, init: RequestInit = {}) {
         }),
       });
 
-      if (proxyResponse.ok || proxyResponse.status !== 404) {
+      // If proxy works, use it
+      if (proxyResponse.ok) {
         return proxyResponse;
+      }
+      // If 404, proxy route doesn't exist yet - fall through to direct fetch
+      if (proxyResponse.status === 404) {
+        console.log("Proxy route not available (404), using direct backend call");
       }
     } catch (proxyError) {
       console.warn("Proxy request failed, trying direct:", proxyError);
@@ -44,6 +49,7 @@ async function medusaFetch(path: string, init: RequestInit = {}) {
   }
 
   // Fallback to direct fetch (server-side or if proxy fails)
+  // Since CORS is configured, this should work
   return fetch(url, {
     ...init,
     headers,

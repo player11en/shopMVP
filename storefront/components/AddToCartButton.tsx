@@ -46,7 +46,7 @@ export function AddToCartButton({ variantId }: { variantId: string }) {
         setMessage("Added to cart!");
         setTimeout(() => setMessage(""), 2000);
       } catch (error: any) {
-        console.error("❌ Error adding to cart:", error);
+        console.error("Error adding to cart:", error);
         // If cart not found (404), create a new cart and try again
         if (error.message.includes("404") || error.message.includes("Not Found")) {
           if (process.env.NODE_ENV === 'development') {

@@ -212,10 +212,10 @@ export default function CartPage() {
             <div className="mt-6">
               <Link
                 href={`/checkout?cart_id=${cart.id}`}
-                className="block w-full px-6 py-3 bg-blue-600 text-white rounded-md hover:bg-blue-700 font-semibold text-center"
-                style={{ backgroundColor: 'var(--darkerblue)' }}
+                className="block w-full px-6 py-3 text-white rounded-md hover:opacity-90 font-semibold text-center transition-opacity"
+                style={{ backgroundColor: '#B64845' }}
               >
-                Proceed to Checkout
+                Proceed to Checkout →
               </Link>
             </div>
           </div>

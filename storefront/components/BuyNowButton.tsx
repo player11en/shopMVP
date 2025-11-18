@@ -14,12 +14,12 @@ export function BuyNowButton({ variantId }: { variantId: string }) {
     setMessage("");
 
     try {
-      if (process.env.NODE_ENV === 'development') {
-        console.log("Buy Now clicked, variantId:", variantId);
-      }
+      console.log("🛒 Buy Now clicked, variantId:", variantId);
       
       // Create a new cart
+      console.log("🆕 Creating new cart for Buy Now...");
       const cart = await createCart();
+      console.log("✅ Cart created:", cart);
       const cartId = cart.cart.id;
       
       if (!cartId) {
@@ -27,7 +27,9 @@ export function BuyNowButton({ variantId }: { variantId: string }) {
       }
 
       // Add item to cart
+      console.log("➕ Adding variant to cart:", { cartId, variantId, quantity: 1 });
       await addToCart(cartId, variantId, 1);
+      console.log("✅ Successfully added to cart!");
       
       // Save cart ID to localStorage
       localStorage.setItem("cart_id", cartId);
@@ -36,14 +38,14 @@ export function BuyNowButton({ variantId }: { variantId: string }) {
       router.push(`/checkout?cart_id=${cartId}`);
       
     } catch (error: any) {
-      console.error("Buy Now error:", error);
+      console.error("❌ Buy Now error:", error);
       setMessage("Error: " + error.message);
       setLoading(false);
     }
   };
 
   if (!variantId) {
-    console.error("BuyNowButton: variantId is missing!");
+    console.error("❌ BuyNowButton: variantId is missing!");
     return (
       <div>
         <button disabled className="px-4 py-2 text-gray-400 rounded-md cursor-not-allowed opacity-50">

@@ -8,30 +8,27 @@ export function AddToCartButton({ variantId }: { variantId: string }) {
   const [message, setMessage] = useState("");
 
   // Debug: Log when component renders
-  if (process.env.NODE_ENV === 'development') {
-    console.log("AddToCartButton rendered with variantId:", variantId);
-  }
+  console.log("🔘 AddToCartButton rendered with variantId:", variantId);
 
   const handleAddToCart = async () => {
     setLoading(true);
     setMessage("");
 
     try {
-      if (process.env.NODE_ENV === 'development') {
-        console.log("Add to Cart clicked, variantId:", variantId);
-      }
+      console.log("🛒 Add to Cart clicked, variantId:", variantId);
       
       // Get or create cart
       let cartId: string | null = localStorage.getItem("cart_id");
+      console.log("📦 Existing cart ID:", cartId);
       
       if (!cartId) {
-        if (process.env.NODE_ENV === 'development') {
-          console.log("Creating new cart...");
-        }
+        console.log("🆕 Creating new cart...");
         const cart = await createCart();
+        console.log("✅ Cart created:", cart);
         cartId = cart.cart.id;
         if (cartId) {
           localStorage.setItem("cart_id", cartId);
+          console.log("💾 Cart ID saved to localStorage");
         }
       }
 
@@ -42,16 +39,16 @@ export function AddToCartButton({ variantId }: { variantId: string }) {
 
       // Add item to cart
       try {
+        console.log("➕ Adding variant to cart:", { cartId, variantId, quantity: 1 });
         await addToCart(cartId, variantId, 1);
+        console.log("✅ Successfully added to cart!");
         setMessage("Added to cart!");
         setTimeout(() => setMessage(""), 2000);
       } catch (error: any) {
-        console.error("Error adding to cart:", error);
+        console.error("❌ Error adding to cart:", error);
         // If cart not found (404), create a new cart and try again
         if (error.message.includes("404") || error.message.includes("Not Found")) {
-          if (process.env.NODE_ENV === 'development') {
-            console.log("Cart not found, creating new cart...");
-          }
+          console.log("🔄 Cart not found, creating new cart...");
           localStorage.removeItem("cart_id");
           const cart = await createCart();
           cartId = cart.cart.id;
@@ -68,7 +65,7 @@ export function AddToCartButton({ variantId }: { variantId: string }) {
         }
       }
     } catch (error: any) {
-      console.error("Add to cart error:", error);
+      console.error("❌ Final error:", error);
       setMessage("Error: " + error.message);
     } finally {
       setLoading(false);
@@ -77,7 +74,7 @@ export function AddToCartButton({ variantId }: { variantId: string }) {
 
   // Check if variantId is missing
   if (!variantId) {
-    console.error("AddToCartButton: variantId is missing!");
+    console.error("❌ AddToCartButton: variantId is missing!");
     return (
       <div>
         <button disabled className="px-4 py-2 text-gray-400 rounded-md cursor-not-allowed opacity-50">
@@ -91,6 +88,7 @@ export function AddToCartButton({ variantId }: { variantId: string }) {
     <div>
       <button
         onClick={(e) => {
+          console.log("🖱️ Button clicked!", { variantId, event: e });
           e.preventDefault();
           e.stopPropagation();
           handleAddToCart();

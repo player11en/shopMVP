@@ -244,16 +244,14 @@ export default async function ProductPage({
                       const isFreeVariant = hasPrice && variantPrice === 0;
                       
                       // Debug: Log variant data - show everything
-                      if (process.env.NODE_ENV === 'development') {
-                        console.log('=== VARIANT DEBUG ===');
-                        console.log('Variant ID:', variant.id);
-                        console.log('Variant Title:', variant.title);
-                        console.log('Product Metadata:', metadata);
-                        console.log('Is Digital:', isDigital);
-                        console.log('Is Free:', isFreeVariant);
-                        console.log('Price:', variantPrice);
-                        console.log('===================');
-                      }
+                      console.log('=== VARIANT DEBUG ===');
+                      console.log('Variant ID:', variant.id);
+                      console.log('Variant Title:', variant.title);
+                      console.log('Product Metadata:', metadata);
+                      console.log('Is Digital:', isDigital);
+                      console.log('Is Free:', isFreeVariant);
+                      console.log('Price:', variantPrice);
+                      console.log('===================');
                       
                       // Format price: calculated_amount is already in correct format (10 = €10), not cents
                       // But if it's very large (> 1000), it might be in cents, so check
@@ -298,29 +296,29 @@ export default async function ProductPage({
                                 )}
                               </div>
                             </div>
-                            <div className="ml-4">
-                              {/* FREE DIGITAL: Show download button (no cart/checkout needed) */}
-                              {isFreeVariant && isDigital && (
+                            {/* FREE DIGITAL: Show download button (no cart/checkout needed) */}
+                            {isFreeVariant && isDigital && (
+                              <div className="mt-3">
                                 <FreeDownloadButton product={product} variant={variant} />
-                              )}
-                              {/* PAID DIGITAL: Show Buy Now button (goes directly to checkout) */}
-                              {!isFreeVariant && isDigital && (
-                                <BuyNowButton variantId={variant.id} />
-                              )}
-                              {/* PAID PHYSICAL: Show Add to Cart button (can add multiple items) */}
-                              {!isFreeVariant && !isDigital && (
-                                <AddToCartButton variantId={variant.id} />
-                              )}
-                              {/* FREE PHYSICAL: Show message */}
-                              {isFreeVariant && !isDigital && (
-                                <div className="p-3 rounded-md" style={{ backgroundColor: '#F5EDE2', border: '1px solid #C7BFB6' }}>
-                                  <p className="text-sm" style={{ color: '#7A2E2C' }}>
-                                    <i className="fas fa-info-circle mr-2"></i>
-                                    Free product - Add to cart to claim
-                                  </p>
-                                </div>
-                              )}
-                            </div>
+                              </div>
+                            )}
+                            {/* PAID DIGITAL: Show Buy Now button (goes directly to checkout) */}
+                            {!isFreeVariant && isDigital && (
+                              <BuyNowButton variantId={variant.id} />
+                            )}
+                            {/* PAID PHYSICAL: Show Add to Cart button (can add multiple items) */}
+                            {!isFreeVariant && !isDigital && (
+                              <AddToCartButton variantId={variant.id} />
+                            )}
+                            {/* FREE PHYSICAL: Show message */}
+                            {isFreeVariant && !isDigital && (
+                              <div className="mt-3 p-3 rounded-md" style={{ backgroundColor: '#F5EDE2', border: '1px solid #C7BFB6' }}>
+                                <p className="text-sm" style={{ color: '#7A2E2C' }}>
+                                  <i className="fas fa-info-circle mr-2"></i>
+                                  Free product - Add to cart to claim
+                                </p>
+                              </div>
+                            )}
                           </div>
                         </div>
                       );

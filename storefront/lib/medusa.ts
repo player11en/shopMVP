@@ -171,16 +171,26 @@ export async function fetchProduct(handle: string) {
 }
 
 export async function createCart() {
+  // Get default region first
+  const regionId = await getDefaultRegion();
+  
+  const body: any = {};
+  if (regionId) {
+    body.region_id = regionId;
+  }
+  
   const response = await fetch(`${MEDUSA_BACKEND_URL}/store/carts`, {
     method: "POST",
     headers: {
       "x-publishable-api-key": MEDUSA_API_KEY,
       "Content-Type": "application/json",
     },
+    body: Object.keys(body).length > 0 ? JSON.stringify(body) : undefined,
   });
 
   if (!response.ok) {
-    throw new Error("Failed to create cart");
+    const errorText = await response.text();
+    throw new Error(`Failed to create cart: ${response.status} - ${errorText}`);
   }
 
   return response.json();
@@ -200,7 +210,18 @@ export async function addToCart(cartId: string, variantId: string, quantity: num
   });
 
   if (!response.ok) {
-    throw new Error("Failed to add to cart");
+    const errorText = await response.text();
+    let errorMessage = "Failed to add to cart";
+    
+    try {
+      const errorJson = JSON.parse(errorText);
+      errorMessage = errorJson.message || errorJson.error || errorMessage;
+    } catch {
+      // If not JSON, use the text as is
+      errorMessage = errorText || errorMessage;
+    }
+    
+    throw new Error(`${errorMessage} (${response.status})`);
   }
 
   return response.json();

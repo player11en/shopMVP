@@ -12,14 +12,20 @@ export function AddToCartButton({ variantId }: { variantId: string }) {
     setMessage("");
 
     try {
+      console.log("🛒 Add to Cart clicked, variantId:", variantId);
+      
       // Get or create cart
       let cartId: string | null = localStorage.getItem("cart_id");
+      console.log("📦 Existing cart ID:", cartId);
       
       if (!cartId) {
+        console.log("🆕 Creating new cart...");
         const cart = await createCart();
+        console.log("✅ Cart created:", cart);
         cartId = cart.cart.id;
         if (cartId) {
-        localStorage.setItem("cart_id", cartId);
+          localStorage.setItem("cart_id", cartId);
+          console.log("💾 Cart ID saved to localStorage");
         }
       }
 
@@ -30,20 +36,24 @@ export function AddToCartButton({ variantId }: { variantId: string }) {
 
       // Add item to cart
       try {
+        console.log("➕ Adding variant to cart:", { cartId, variantId, quantity: 1 });
         await addToCart(cartId, variantId, 1);
+        console.log("✅ Successfully added to cart!");
         setMessage("Added to cart!");
         setTimeout(() => setMessage(""), 2000);
       } catch (error: any) {
+        console.error("❌ Error adding to cart:", error);
         // If cart not found (404), create a new cart and try again
         if (error.message.includes("404") || error.message.includes("Not Found")) {
+          console.log("🔄 Cart not found, creating new cart...");
           localStorage.removeItem("cart_id");
           const cart = await createCart();
           cartId = cart.cart.id;
           if (cartId) {
             localStorage.setItem("cart_id", cartId);
-      await addToCart(cartId, variantId, 1);
-      setMessage("Added to cart!");
-      setTimeout(() => setMessage(""), 2000);
+            await addToCart(cartId, variantId, 1);
+            setMessage("Added to cart!");
+            setTimeout(() => setMessage(""), 2000);
           } else {
             throw new Error("Failed to create new cart");
           }
@@ -52,6 +62,7 @@ export function AddToCartButton({ variantId }: { variantId: string }) {
         }
       }
     } catch (error: any) {
+      console.error("❌ Final error:", error);
       setMessage("Error: " + error.message);
     } finally {
       setLoading(false);

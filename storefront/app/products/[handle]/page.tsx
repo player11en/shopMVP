@@ -2,6 +2,7 @@ import Link from "next/link";
 import Image from "next/image";
 import { fetchProduct, createCart, addToCart } from "@/lib/medusa";
 import { AddToCartButton } from "@/components/AddToCartButton";
+import { BuyNowButton } from "@/components/BuyNowButton";
 import { ProductGallery } from "@/components/ProductGallery";
 import { FreeDownloadButton } from "@/components/FreeDownloadButton";
 
@@ -220,9 +221,9 @@ export default async function ProductPage({
                       console.log('=== VARIANT DEBUG ===');
                       console.log('Variant ID:', variant.id);
                       console.log('Variant Title:', variant.title);
-                      console.log('Variant ID type:', typeof variant.id);
-                      console.log('Variant ID truthy?', !!variant.id);
-                      console.log('All Variant Keys:', Object.keys(variant));
+                      console.log('Product Metadata:', product.metadata);
+                      console.log('Is Digital:', metadata.product_type === 'digital' || metadata.is_digital === 'true');
+                      console.log('Is Free:', isFreeVariant);
                       console.log('===================');
                       
                       // Get price from variant - Medusa stores prices in cents
@@ -293,17 +294,21 @@ export default async function ProductPage({
                                 )}
                               </div>
                             </div>
-                            {/* Show Add to Cart button ONLY for paid products OR physical products */}
-                            {!isFreeVariant && (
-                              <AddToCartButton variantId={variant.id} />
-                            )}
-                            {/* Show download button for FREE DIGITAL products (replaces Add to Cart) */}
+                            {/* FREE DIGITAL: Show download button (no cart/checkout needed) */}
                             {isFreeVariant && isDigital && (
                               <div className="mt-3">
                                 <FreeDownloadButton product={product} variant={variant} />
                               </div>
                             )}
-                            {/* Show message for free physical products */}
+                            {/* PAID DIGITAL: Show Buy Now button (goes directly to checkout) */}
+                            {!isFreeVariant && isDigital && (
+                              <BuyNowButton variantId={variant.id} />
+                            )}
+                            {/* PAID PHYSICAL: Show Add to Cart button (can add multiple items) */}
+                            {!isFreeVariant && !isDigital && (
+                              <AddToCartButton variantId={variant.id} />
+                            )}
+                            {/* FREE PHYSICAL: Show message */}
                             {isFreeVariant && !isDigital && (
                               <div className="mt-3 p-3 rounded-md" style={{ backgroundColor: '#F5EDE2', border: '1px solid #C7BFB6' }}>
                                 <p className="text-sm" style={{ color: '#7A2E2C' }}>

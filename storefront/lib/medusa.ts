@@ -265,17 +265,31 @@ export async function removeLineItem(cartId: string, lineItemId: string) {
 
 export async function getCart(cartId: string) {
   // Request cart with product relations to get metadata
-  const response = await fetch(`${MEDUSA_BACKEND_URL}/store/carts/${cartId}?fields=*items.variant.product.metadata`, {
+  // Use expand parameter to include full product data with metadata
+  const response = await fetch(`${MEDUSA_BACKEND_URL}/store/carts/${cartId}?expand=items.variant.product`, {
     headers: {
       "x-publishable-api-key": MEDUSA_API_KEY,
     },
   });
 
   if (!response.ok) {
-    throw new Error("Failed to fetch cart");
+    const errorText = await response.text();
+    throw new Error(`Failed to fetch cart: ${errorText}`);
   }
 
-  return response.json();
+  const data = await response.json();
+  
+  // Debug: Log cart structure to see metadata
+  if (data.cart?.items) {
+    console.log('🛒 Cart items structure:', data.cart.items.map((item: any) => ({
+      title: item.title,
+      hasVariant: !!item.variant,
+      hasProduct: !!item.variant?.product,
+      metadata: item.variant?.product?.metadata || item.product?.metadata || {},
+    })));
+  }
+  
+  return data;
 }
 
 // Payment functions

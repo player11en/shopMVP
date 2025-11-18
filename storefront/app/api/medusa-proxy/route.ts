@@ -3,9 +3,59 @@ import { NextRequest, NextResponse } from "next/server"
 const BACKEND_URL =
   process.env.NEXT_PUBLIC_MEDUSA_BACKEND_URL || "http://localhost:9000"
 
+// Handle OPTIONS (CORS preflight)
+export async function OPTIONS(req: NextRequest) {
+  const origin = req.headers.get("origin");
+  return new NextResponse(null, {
+    status: 204,
+    headers: {
+      "Access-Control-Allow-Origin": origin || "*",
+      "Access-Control-Allow-Methods": "GET, POST, PUT, DELETE, OPTIONS",
+      "Access-Control-Allow-Headers": "Content-Type, Authorization, x-publishable-api-key",
+      "Access-Control-Max-Age": "86400",
+    },
+  });
+}
+
+// Handle GET requests
+export async function GET(req: NextRequest) {
+  const searchParams = req.nextUrl.searchParams;
+  const path = searchParams.get("path");
+  const method = searchParams.get("method") || "GET";
+  const headers = JSON.parse(searchParams.get("headers") || "{}");
+  
+  return handleProxyRequest({
+    path: path || "",
+    method,
+    headers,
+    body: null,
+  }, req);
+}
+
+// Handle POST requests
 export async function POST(req: NextRequest) {
   try {
-    const { path, method = "GET", headers = {}, body = null } = await req.json()
+    const { path, method = "GET", headers = {}, body = null } = await req.json();
+    return handleProxyRequest({ path, method, headers, body }, req);
+  } catch (error: any) {
+    return NextResponse.json(
+      {
+        message: "Invalid request body",
+        error: error.message,
+      },
+      { status: 400 }
+    );
+  }
+}
+
+async function handleProxyRequest({ path, method, headers, body }: {
+  path: string;
+  method: string;
+  headers: Record<string, string>;
+  body: string | null;
+}, req: NextRequest) {
+  try {
+    const origin = req.headers.get("origin");
 
     if (!path) {
       return NextResponse.json(
@@ -65,9 +115,13 @@ export async function POST(req: NextRequest) {
       nextResponse.headers.set("Content-Type", "application/json")
     }
 
+    // Set CORS headers - use actual origin, not wildcard (required for credentials)
     if (!nextResponse.headers.has("Access-Control-Allow-Origin")) {
-      nextResponse.headers.set("Access-Control-Allow-Origin", "*")
+      nextResponse.headers.set("Access-Control-Allow-Origin", origin || "*");
     }
+    nextResponse.headers.set("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS");
+    nextResponse.headers.set("Access-Control-Allow-Headers", "Content-Type, Authorization, x-publishable-api-key");
+    nextResponse.headers.set("Access-Control-Allow-Credentials", "true");
 
     return nextResponse
   } catch (error: any) {

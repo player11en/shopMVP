@@ -105,11 +105,30 @@ async function getDefaultRegion(): Promise<string | null> {
 
 export async function fetchProduct(handle: string) {
   try {
-    // Get default region for price calculation
-    const regionId = await getDefaultRegion();
-    
-    // Build URL with fields parameter for calculated_price
+    // Try custom endpoint first (returns { product: {...} })
     // Use medusaFetch to go through proxy (handles CORS automatically)
+    try {
+      const customResponse = await medusaFetch(`/store/products/handle/${handle}`, {
+        method: 'GET',
+        headers: {
+          "x-publishable-api-key": MEDUSA_API_KEY,
+        },
+        cache: 'no-store',
+      });
+
+      if (customResponse.ok) {
+        const customData = await customResponse.json();
+        if (customData.product) {
+          console.log('✅ Found product via custom endpoint:', customData.product.handle);
+          return customData.product;
+        }
+      }
+    } catch (customError: any) {
+      console.warn("Custom endpoint failed, trying standard API:", customError.message);
+    }
+    
+    // Fallback to standard products API with handle query
+    const regionId = await getDefaultRegion();
     let url = `/store/products?handle=${handle}&fields=*variants.calculated_price,images`;
     if (regionId) {
       url += `&region_id=${regionId}`;
@@ -160,30 +179,6 @@ export async function fetchProduct(handle: string) {
         fullResponse: data
       });
       throw new Error(`Product with handle "${handle}" not found`);
-    }
-    
-    // Try to get metadata from custom endpoint
-    try {
-      const customResponse = await fetch(`${MEDUSA_BACKEND_URL}/store/products/handle/${handle}`, {
-          headers: {
-            "x-publishable-api-key": MEDUSA_API_KEY,
-          },
-          cache: 'no-store',
-        });
-
-      if (customResponse.ok) {
-        const customData = await customResponse.json();
-        // Merge metadata from custom endpoint
-        if (customData.product?.metadata) {
-          product = {
-            ...product,
-            metadata: customData.product.metadata,
-          };
-        }
-      }
-    } catch (customError) {
-      // Ignore custom endpoint errors
-      console.warn('Could not fetch metadata from custom endpoint:', customError);
     }
     
     // Debug: Log product data

@@ -224,44 +224,54 @@ export default async function ProductPage({
                       // Get price from variant - Medusa stores prices in cents
                       // Check multiple possible price locations
                       let variantPrice = 0;
-                      let currencyCode = 'usd';
+                      let currencyCode = 'eur'; // Default to EUR
+                      let priceInCents = true; // Track if price is in cents
                       
                       // Get price from calculated_price (Medusa v2 standard way)
+                      // calculated_price.calculated_amount is already in the correct currency unit (not cents)
                       if (variant.calculated_price) {
                         variantPrice = variant.calculated_price?.calculated_amount || 0;
-                        currencyCode = variant.calculated_price?.currency_code?.toLowerCase() || 'usd';
+                        currencyCode = variant.calculated_price?.currency_code?.toLowerCase() || 'eur';
+                        priceInCents = false; // calculated_amount is already in correct format
                       }
                       
                       // Fallback to prices array if calculated_price not available
+                      // prices array amounts are in cents
                       if (!variantPrice && variant.prices && variant.prices.length > 0) {
+                        // Prefer EUR, then USD, then first available
+                        const eurPrice = variant.prices.find((p: any) => p.currency_code?.toLowerCase() === 'eur');
                         const usdPrice = variant.prices.find((p: any) => p.currency_code?.toLowerCase() === 'usd');
-                        const priceObj = usdPrice || variant.prices[0];
+                        const priceObj = eurPrice || usdPrice || variant.prices[0];
                         variantPrice = priceObj?.amount || 0;
-                        currencyCode = priceObj?.currency_code?.toLowerCase() || 'usd';
+                        currencyCode = priceObj?.currency_code?.toLowerCase() || 'eur';
+                        priceInCents = true; // prices array amounts are in cents
                       }
                       
                       const hasPrice = variantPrice > 0 || (variant.prices && variant.prices.length > 0) || variant.calculated_price;
                       const isFreeVariant = hasPrice && variantPrice === 0;
                       
-                      // Debug: Only log if there's an issue
-                      if (process.env.NODE_ENV === 'development' && isFreeVariant && isDigital) {
-                        console.log('✅ Free Digital Product Detected:', {
+                      // Debug: Log price info
+                      if (process.env.NODE_ENV === 'development') {
+                        console.log('💰 Variant Price:', {
                           variantId: variant.id,
-                          isDigital,
-                          isFree: isFreeVariant,
-                          price: variantPrice,
-                          metadata
+                          variantTitle: variant.title,
+                          calculated_price: variant.calculated_price,
+                          prices: variant.prices,
+                          variantPrice,
+                          currencyCode,
+                          priceInCents,
+                          isFreeVariant
                         });
                       }
                       
-                      // Format price: calculated_amount is already in correct format (10 = €10), not cents
-                      // But if it's very large (> 1000), it might be in cents, so check
+                      // Format price: Convert from cents if needed
                       let displayPrice = null;
                       if (variantPrice > 0) {
-                        // If price is > 1000, assume it's in cents, otherwise it's already in correct format
-                        if (variantPrice > 1000) {
+                        if (priceInCents) {
+                          // Convert from cents to currency units
                           displayPrice = (variantPrice / 100).toFixed(2);
                         } else {
+                          // Already in correct format
                           displayPrice = variantPrice.toFixed(2);
                         }
                       }

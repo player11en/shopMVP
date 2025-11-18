@@ -10,9 +10,12 @@ export async function GET(
   try {
     const productModuleService = req.scope.resolve("product");
 
+    // Only fetch published products (status = "published")
+    // This matches the behavior of the standard Medusa store API
     const [products] = await productModuleService.listAndCountProducts(
       {
         handle,
+        status: "published", // Only published products are available in store API
       },
       {
         select: [
@@ -43,11 +46,22 @@ export async function GET(
 
     if (!products || products.length === 0) {
       return res.status(404).json({
-        message: `Product with handle "${handle}" not found`,
+        message: `Product with handle "${handle}" not found or not published`,
+        hint: "Make sure the product status is set to 'published' in the Admin Dashboard",
       });
     }
 
     const product = products[0];
+    
+    // Double-check status (should be "published" but verify)
+    if (product.status !== "published") {
+      return res.status(404).json({
+        message: `Product with handle "${handle}" is not published`,
+        status: product.status,
+        hint: "Please publish the product in the Admin Dashboard",
+      });
+    }
+    
     const metadata = product.metadata || {};
 
     // Fetch prices for variants from price module
@@ -88,15 +102,28 @@ export async function GET(
         console.log(`[Product ${handle}] Found ${prices.length} prices for ${variantIds.length} variants`);
 
         // Attach prices to variants
+        // Note: prices array amounts are in cents (e.g., 200 = €2.00)
         productWithPrices = {
           ...product,
           variants: product.variants.map((variant: any) => {
             const variantPrices = prices.filter((p: any) => p.variant_id === variant.id);
             console.log(`[Product ${handle}] Variant ${variant.id} has ${variantPrices.length} prices`);
+            
+            // Sort prices: prefer EUR, then USD, then others
+            const sortedPrices = variantPrices.sort((a: any, b: any) => {
+              const aCode = a.currency_code?.toLowerCase();
+              const bCode = b.currency_code?.toLowerCase();
+              if (aCode === 'eur') return -1;
+              if (bCode === 'eur') return 1;
+              if (aCode === 'usd') return -1;
+              if (bCode === 'usd') return 1;
+              return 0;
+            });
+            
             return {
               ...variant,
-              prices: variantPrices.map((p: any) => ({
-                amount: p.amount,
+              prices: sortedPrices.map((p: any) => ({
+                amount: p.amount, // Amount is in cents
                 currency_code: p.currency_code,
               })),
             };

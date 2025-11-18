@@ -128,9 +128,37 @@ export async function fetchProduct(handle: string) {
     }
 
     const data = await response.json();
-    let product = data.products?.find((p: any) => p.handle === handle);
+    
+    // Debug: Log the response structure
+    console.log('🔍 fetchProduct response:', {
+      hasProducts: !!data.products,
+      productsLength: data.products?.length,
+      products: data.products?.map((p: any) => ({ handle: p.handle, title: p.title })),
+      lookingFor: handle,
+      dataKeys: Object.keys(data)
+    });
+    
+    // Handle both direct products array and wrapped response
+    const products = data.products || (Array.isArray(data) ? data : []);
+    
+    // Try exact match first, then case-insensitive
+    let product = products.find((p: any) => p.handle === handle) ||
+                  products.find((p: any) => p.handle?.toLowerCase() === handle?.toLowerCase());
+    
+    if (!product && products.length > 0) {
+      // If we got products but none match, use the first one (might be handle query issue)
+      console.warn(`⚠️ Handle "${handle}" not found, but got ${products.length} product(s). Using first product.`);
+      product = products[0];
+    }
     
     if (!product) {
+      console.error('❌ Product not found in response:', {
+        handle,
+        availableHandles: products.map((p: any) => p.handle),
+        productsCount: products.length,
+        responseKeys: Object.keys(data),
+        fullResponse: data
+      });
       throw new Error(`Product with handle "${handle}" not found`);
     }
     

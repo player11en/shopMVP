@@ -57,7 +57,8 @@ services:
           type: web
           name: medusa-backend
           property: host
-        # Or set manually: https://medusa-backend.onrender.com
+        # NOTE: If fromService doesn't work, set manually in Render dashboard:
+        # https://medusa-backend-XXXX.onrender.com (replace XXXX with your service ID)
       - key: NEXT_PUBLIC_MEDUSA_API_KEY
         sync: false  # Set this in Render dashboard (get from Medusa admin)
 

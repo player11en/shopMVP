@@ -243,16 +243,16 @@ export default async function ProductPage({
                       const hasPrice = variantPrice > 0 || (variant.prices && variant.prices.length > 0) || variant.calculated_price;
                       const isFreeVariant = hasPrice && variantPrice === 0;
                       
-                      // Debug: Log variant data - show everything
-                      console.log('=== VARIANT DEBUG ===');
-                      console.log('Variant ID:', variant.id);
-                      console.log('Variant Title:', variant.title);
-                      console.log('Product Metadata:', metadata);
-                      console.log('Is Digital:', isDigital);
-                      console.log('Is Free:', isFreeVariant);
-                      console.log('Price:', variantPrice);
-                      console.log('Should show download button:', isFreeVariant && isDigital);
-                      console.log('===================');
+                      // Debug: Only log if there's an issue
+                      if (process.env.NODE_ENV === 'development' && isFreeVariant && isDigital) {
+                        console.log('✅ Free Digital Product Detected:', {
+                          variantId: variant.id,
+                          isDigital,
+                          isFree: isFreeVariant,
+                          price: variantPrice,
+                          metadata
+                        });
+                      }
                       
                       // Format price: calculated_amount is already in correct format (10 = €10), not cents
                       // But if it's very large (> 1000), it might be in cents, so check
@@ -273,7 +273,7 @@ export default async function ProductPage({
                           className="border rounded-lg p-4"
                           style={{ borderColor: 'var(--skyblue)', backgroundColor: 'var(--greywhite)' }}
                         >
-                          <div className="flex justify-between items-center">
+                          <div className="flex flex-col sm:flex-row sm:justify-between sm:items-start gap-4">
                             <div className="flex-1">
                               <p className="font-medium" style={{ color: 'var(--darkerblue)' }}>
                                 {variant.title}
@@ -297,29 +297,29 @@ export default async function ProductPage({
                                 )}
                               </div>
                             </div>
-                            {/* FREE DIGITAL: Show download button (no cart/checkout needed) */}
-                            {isFreeVariant && isDigital && (
-                              <div className="mt-3">
+                            <div className="flex-shrink-0 w-full sm:w-auto">
+                              {/* FREE DIGITAL: Show download button (no cart/checkout needed) */}
+                              {isFreeVariant && isDigital && (
                                 <FreeDownloadButton product={product} variant={variant} />
-                              </div>
-                            )}
-                            {/* PAID DIGITAL: Show Buy Now button (goes directly to checkout) */}
-                            {!isFreeVariant && isDigital && (
-                              <BuyNowButton variantId={variant.id} />
-                            )}
-                            {/* PAID PHYSICAL: Show Add to Cart button (can add multiple items) */}
-                            {!isFreeVariant && !isDigital && (
-                              <AddToCartButton variantId={variant.id} />
-                            )}
-                            {/* FREE PHYSICAL: Show message */}
-                            {isFreeVariant && !isDigital && (
-                              <div className="mt-3 p-3 rounded-md" style={{ backgroundColor: '#F5EDE2', border: '1px solid #C7BFB6' }}>
-                                <p className="text-sm" style={{ color: '#7A2E2C' }}>
-                                  <i className="fas fa-info-circle mr-2"></i>
-                                  Free product - Add to cart to claim
-                                </p>
-                              </div>
-                            )}
+                              )}
+                              {/* PAID DIGITAL: Show Buy Now button (goes directly to checkout) */}
+                              {!isFreeVariant && isDigital && (
+                                <BuyNowButton variantId={variant.id} />
+                              )}
+                              {/* PAID PHYSICAL: Show Add to Cart button (can add multiple items) */}
+                              {!isFreeVariant && !isDigital && (
+                                <AddToCartButton variantId={variant.id} />
+                              )}
+                              {/* FREE PHYSICAL: Show message */}
+                              {isFreeVariant && !isDigital && (
+                                <div className="p-3 rounded-md" style={{ backgroundColor: '#F5EDE2', border: '1px solid #C7BFB6' }}>
+                                  <p className="text-sm" style={{ color: '#7A2E2C' }}>
+                                    <i className="fas fa-info-circle mr-2"></i>
+                                    Free product - Add to cart to claim
+                                  </p>
+                                </div>
+                              )}
+                            </div>
                           </div>
                         </div>
                       );

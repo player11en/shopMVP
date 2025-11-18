@@ -134,18 +134,6 @@ export function FreeDownloadButton({ product, variant }: FreeDownloadButtonProps
 
   const downloadUrl = getDownloadUrl();
 
-  // Debug logging (always show for troubleshooting)
-  console.log('🔍 FreeDownloadButton Debug:', {
-    isFree,
-    isDigital,
-    hasDownloadUrl: !!downloadUrl,
-    downloadUrl,
-    metadata,
-    price,
-    hasPrice,
-    shouldShow: isFree && isDigital,
-  });
-
   // STRICT RULES: Download button ONLY shows if:
   // 1. Product is FREE (price === 0) AND
   // 2. Product is DIGITAL (product_type === 'digital')
@@ -156,9 +144,22 @@ export function FreeDownloadButton({ product, variant }: FreeDownloadButtonProps
   // - Physical products (even if free and has 3D model - 3D is just for preview)
   const shouldShow = isFree && isDigital;
   
+  // Debug logging
+  console.log('🔍 FreeDownloadButton Render:', {
+    isFree,
+    isDigital,
+    price,
+    hasDownloadUrl: !!downloadUrl,
+    shouldShow,
+    willRender: shouldShow
+  });
+  
   if (!shouldShow) {
+    console.log('❌ FreeDownloadButton NOT showing - conditions not met');
     return null;
   }
+  
+  console.log('✅ FreeDownloadButton WILL render');
   
   // If no download URL, show a message instead of download button
   if (!downloadUrl) {
@@ -200,12 +201,18 @@ export function FreeDownloadButton({ product, variant }: FreeDownloadButtonProps
   };
 
   return (
-    <div className="mt-4">
+    <div className="w-full sm:w-auto">
       <button
         onClick={handleDownload}
         disabled={downloading}
-        className="w-full px-6 py-3 rounded-md font-semibold hover:opacity-90 transition-opacity disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center"
-        style={{ backgroundColor: 'var(--darkerblue)', color: 'white' }}
+        className="w-full sm:w-auto px-4 sm:px-6 py-2 sm:py-3 rounded-md font-semibold hover:opacity-90 transition-opacity disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center whitespace-nowrap text-sm sm:text-base"
+        style={{ 
+          backgroundColor: downloading ? '#C7BFB6' : '#B64845',
+          color: '#FFFFFF',
+          border: 'none',
+          cursor: downloading ? 'not-allowed' : 'pointer',
+          minWidth: '120px'
+        }}
       >
         {downloading ? (
           <>
@@ -220,14 +227,10 @@ export function FreeDownloadButton({ product, variant }: FreeDownloadButtonProps
         )}
       </button>
       {message && (
-        <p className={`mt-2 text-sm text-center ${message.includes('started') ? 'text-green-600' : 'text-red-600'}`}>
+        <p className={`mt-2 text-xs text-center ${message.includes('started') ? 'text-green-600' : 'text-red-600'}`}>
           {message}
         </p>
       )}
-      <p className="mt-2 text-sm text-center" style={{ color: 'var(--browngrey)' }}>
-        <i className="fas fa-gift mr-1"></i>
-        Free digital product - No account or payment required
-      </p>
     </div>
   );
 }

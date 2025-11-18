@@ -11,7 +11,6 @@ export default defineConfig({
       authCors: process.env.AUTH_CORS!,
       jwtSecret: process.env.JWT_SECRET || "supersecret",
       cookieSecret: process.env.COOKIE_SECRET || "supersecret",
-      port: parseInt(process.env.PORT || "9000", 10),
     }
   },
   modules: [

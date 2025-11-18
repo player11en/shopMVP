@@ -10,43 +10,43 @@ async function medusaFetch(path: string, init: RequestInit = {}) {
   const method = (init.method || "GET").toUpperCase();
   const headers: HeadersInit = {
     "x-publishable-api-key": MEDUSA_API_KEY,
+    "Content-Type": "application/json",
     ...(init.headers || {}),
   };
 
-  // Server-side or simple GET can hit backend directly
-  if (typeof window === "undefined" || method === "GET") {
-    return fetch(url, {
-      ...init,
-      headers,
-    });
+  // Always use proxy for client-side requests to avoid CORS issues
+  if (typeof window !== "undefined") {
+    const body =
+      init.body && typeof init.body !== "string"
+        ? JSON.stringify(init.body)
+        : (init.body as string | null | undefined);
+
+    try {
+      const proxyResponse = await fetch("/api/medusa-proxy", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          path,
+          method,
+          headers,
+          body: body ?? null,
+        }),
+      });
+
+      if (proxyResponse.ok || proxyResponse.status !== 404) {
+        return proxyResponse;
+      }
+    } catch (proxyError) {
+      console.warn("Proxy request failed, trying direct:", proxyError);
+    }
   }
 
-  const body =
-    init.body && typeof init.body !== "string"
-      ? JSON.stringify(init.body)
-      : (init.body as string | null | undefined);
-
-  const proxyResponse = await fetch("/api/medusa-proxy", {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify({
-      path,
-      method,
-      headers,
-      body: body ?? null,
-    }),
-  });
-
-  if (proxyResponse.status !== 404) {
-    return proxyResponse;
-  }
-
+  // Fallback to direct fetch (server-side or if proxy fails)
   return fetch(url, {
     ...init,
     headers,
-    body,
   });
 }
 
@@ -277,17 +277,6 @@ export async function getCart(cartId: string) {
   }
 
   const data = await response.json();
-  
-  // Debug: Log cart structure to see metadata
-  if (data.cart?.items) {
-    console.log('🛒 Cart items structure:', data.cart.items.map((item: any) => ({
-      title: item.title,
-      hasVariant: !!item.variant,
-      hasProduct: !!item.variant?.product,
-      metadata: item.variant?.product?.metadata || item.product?.metadata || {},
-    })));
-  }
-  
   return data;
 }
 

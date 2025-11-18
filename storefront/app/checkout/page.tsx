@@ -299,10 +299,28 @@ function CheckoutContent() {
   const isFreeCart = cart && cart.total === 0;
 
   // Check if all products are digital (no shipping needed)
+  // Debug: Log cart items to see structure
+  if (cart?.items) {
+    console.log('🛒 Cart items for digital check:', cart.items.map((item: any) => ({
+      title: item.title,
+      variant: item.variant,
+      product: item.product,
+      metadata: item.variant?.product?.metadata || item.product?.metadata || {},
+    })));
+  }
+  
   const isDigitalOnly = cart?.items?.every((item: any) => {
-    const metadata = item.variant?.product?.metadata || item.product?.metadata || {};
-    return metadata.product_type === 'digital' || metadata.is_digital === 'true';
+    // Try multiple paths to get metadata
+    const metadata = item.variant?.product?.metadata || 
+                     item.product?.metadata || 
+                     item.metadata ||
+                     {};
+    const isDigital = metadata.product_type === 'digital' || metadata.is_digital === 'true';
+    console.log(`📦 Item "${item.title}": isDigital=${isDigital}`, { metadata });
+    return isDigital;
   }) || false;
+  
+  console.log('✅ isDigitalOnly:', isDigitalOnly);
 
   // Handle payment setup (for Stripe, show card form)
   const handlePaymentSetup = async () => {

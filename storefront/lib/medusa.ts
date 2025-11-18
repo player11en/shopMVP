@@ -264,7 +264,8 @@ export async function removeLineItem(cartId: string, lineItemId: string) {
 }
 
 export async function getCart(cartId: string) {
-  const response = await fetch(`${MEDUSA_BACKEND_URL}/store/carts/${cartId}`, {
+  // Request cart with product relations to get metadata
+  const response = await fetch(`${MEDUSA_BACKEND_URL}/store/carts/${cartId}?fields=*items.variant.product.metadata`, {
     headers: {
       "x-publishable-api-key": MEDUSA_API_KEY,
     },

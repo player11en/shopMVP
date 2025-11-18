@@ -149,16 +149,28 @@ export function FreeDownloadButton({ product, variant }: FreeDownloadButtonProps
 
   // STRICT RULES: Download button ONLY shows if:
   // 1. Product is FREE (price === 0) AND
-  // 2. Product is DIGITAL (product_type === 'digital') AND
-  // 3. Has a download URL
+  // 2. Product is DIGITAL (product_type === 'digital')
   // 
+  // Download URL is optional - if missing, we'll show a message
   // Does NOT show for:
   // - Paid products (even if digital - must pay first)
   // - Physical products (even if free and has 3D model - 3D is just for preview)
-  const shouldShow = isFree && isDigital && !!downloadUrl;
+  const shouldShow = isFree && isDigital;
   
   if (!shouldShow) {
     return null;
+  }
+  
+  // If no download URL, show a message instead of download button
+  if (!downloadUrl) {
+    return (
+      <div className="mt-4 p-4 rounded-md" style={{ backgroundColor: '#FBF7F1', border: '1px solid #C7BFB6' }}>
+        <p className="text-sm text-center" style={{ color: '#7A2E2C' }}>
+          <i className="fas fa-info-circle mr-2"></i>
+          Free digital product - Download link will be available after adding to cart
+        </p>
+      </div>
+    );
   }
 
   const handleDownload = async () => {

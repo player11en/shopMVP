@@ -293,15 +293,25 @@ export default async function ProductPage({
                                 )}
                               </div>
                             </div>
-                            {/* Always show Add to Cart button */}
-                            <AddToCartButton variantId={variant.id} />
-                          </div>
-                          {/* Only show download button for free DIGITAL products */}
-                          {isFreeVariant && isDigital && (
-                            <div className="mt-3">
-                              <FreeDownloadButton product={product} variant={variant} />
-                            </div>
-                          )}
+                            {/* Show Add to Cart button ONLY for paid products OR physical products */}
+                            {!isFreeVariant && (
+                              <AddToCartButton variantId={variant.id} />
+                            )}
+                            {/* Show download button for FREE DIGITAL products (replaces Add to Cart) */}
+                            {isFreeVariant && isDigital && (
+                              <div className="mt-3">
+                                <FreeDownloadButton product={product} variant={variant} />
+                              </div>
+                            )}
+                            {/* Show message for free physical products */}
+                            {isFreeVariant && !isDigital && (
+                              <div className="mt-3 p-3 rounded-md" style={{ backgroundColor: '#F5EDE2', border: '1px solid #C7BFB6' }}>
+                                <p className="text-sm" style={{ color: '#7A2E2C' }}>
+                                  <i className="fas fa-info-circle mr-2"></i>
+                                  Free product - Add to cart to claim
+                                </p>
+                              </div>
+                            )}
                         </div>
                       );
                     })}

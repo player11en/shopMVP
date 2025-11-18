@@ -456,9 +456,15 @@ function CheckoutContent() {
     }
 
     // For free products, skip payment provider selection
-    if (!isFreeCart && !selectedProvider) {
+    if (!isFreeCart && paymentProviders.length > 0 && !selectedProvider) {
       setError("Please select a payment method");
       return;
+    }
+    
+    // If no payment providers and not free, show error but allow manual completion
+    if (!isFreeCart && paymentProviders.length === 0) {
+      console.warn("⚠️ No payment providers available, but attempting to complete order anyway");
+      // Continue anyway - backend might handle it
     }
 
     // Start payment setup (or complete directly if free)
@@ -787,9 +793,14 @@ function CheckoutContent() {
 
                 <button
                   type="submit"
-                  disabled={processing || (!isFreeCart && paymentProviders.length > 0 && !selectedProvider) || showStripeForm}
+                  disabled={processing || showStripeForm || (!isFreeCart && paymentProviders.length > 0 && !selectedProvider)}
                   className="w-full px-6 py-3 text-white rounded-md font-semibold hover:opacity-90 transition-opacity disabled:opacity-50 disabled:cursor-not-allowed"
-                  style={{ backgroundColor: processing ? 'var(--browngrey)' : 'var(--darkerblue)' }}
+                  style={{ 
+                    backgroundColor: (processing || showStripeForm || (!isFreeCart && paymentProviders.length > 0 && !selectedProvider)) ? '#C7BFB6' : '#B64845',
+                    color: '#FFFFFF',
+                    border: 'none',
+                    cursor: (processing || showStripeForm || (!isFreeCart && paymentProviders.length > 0 && !selectedProvider)) ? 'not-allowed' : 'pointer'
+                  }}
                 >
                   {processing ? (
                     <>
@@ -801,10 +812,29 @@ function CheckoutContent() {
                     <>
                       <i className="fas fa-gift mr-2"></i>Complete Free Order
                     </>
+                  ) : paymentProviders.length === 0 ? (
+                    <>
+                      <i className="fas fa-exclamation-triangle mr-2"></i>No Payment Method Available
+                    </>
                   ) : (
-                    "Continue to Payment"
+                    <>
+                      <i className="fas fa-credit-card mr-2"></i>Continue to Payment
+                    </>
                   )}
                 </button>
+                
+                {/* Debug info */}
+                {process.env.NODE_ENV === 'development' && (
+                  <div className="mt-4 p-3 text-xs rounded" style={{ backgroundColor: '#F5EDE2', color: '#7A2E2C' }}>
+                    <p><strong>Debug:</strong></p>
+                    <p>Free Cart: {isFreeCart ? 'Yes' : 'No'}</p>
+                    <p>Payment Providers: {paymentProviders.length}</p>
+                    <p>Selected Provider: {selectedProvider || 'None'}</p>
+                    <p>Show Stripe Form: {showStripeForm ? 'Yes' : 'No'}</p>
+                    <p>Processing: {processing ? 'Yes' : 'No'}</p>
+                    <p>Button Disabled: {processing || (!isFreeCart && paymentProviders.length > 0 && !selectedProvider) || showStripeForm ? 'Yes' : 'No'}</p>
+                  </div>
+                )}
               </form>
             </div>
           </div>

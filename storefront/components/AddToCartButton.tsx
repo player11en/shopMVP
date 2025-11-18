@@ -94,8 +94,12 @@ export function AddToCartButton({ variantId }: { variantId: string }) {
           handleAddToCart();
         }}
         disabled={loading}
-        className="px-4 py-2 text-white rounded-md hover:opacity-90 transition-opacity disabled:opacity-50 disabled:cursor-not-allowed"
-        style={{ backgroundColor: loading ? 'var(--browngrey)' : 'var(--lighterblue)' }}
+        className="px-4 py-2 text-white rounded-md hover:opacity-90 transition-opacity disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
+        style={{ 
+          backgroundColor: loading ? '#C7BFB6' : '#B64845',
+          color: '#FFFFFF',
+          border: 'none'
+        }}
       >
         {loading ? (
           <>

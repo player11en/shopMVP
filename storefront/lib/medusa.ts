@@ -76,7 +76,25 @@ export async function fetchProducts() {
 
     if (!response.ok) {
       const errorText = await response.text();
-      throw new Error(`Failed to fetch products: ${response.status} - ${errorText}`);
+      let errorMessage = `Failed to fetch products: ${response.status} - ${errorText}`;
+      
+      // Check if it's a sales channel configuration error
+      try {
+        const errorJson = JSON.parse(errorText);
+        if (errorJson.message?.includes('sales channel')) {
+          errorMessage = `API Key Configuration Error: ${errorJson.message}\n\n` +
+            `To fix this:\n` +
+            `1. Go to Medusa Admin: http://localhost:9000/app\n` +
+            `2. Navigate to Settings → API Keys\n` +
+            `3. Edit your publishable API key\n` +
+            `4. Assign it to a Sales Channel\n\n` +
+            `Or run: cd my-store && npm run link-storefront-api-key`;
+        }
+      } catch (e) {
+        // Not JSON, use original error message
+      }
+      
+      throw new Error(errorMessage);
     }
 
     return response.json();

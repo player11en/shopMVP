@@ -1,6 +1,7 @@
 // 🔑 API Key from environment variable or fallback
 // Get it from: http://localhost:9000/app → Settings → API Keys → Copy Publishable Key
-export const MEDUSA_API_KEY = process.env.NEXT_PUBLIC_MEDUSA_API_KEY || "pk_4c2de4f8b6923e0566e9e7ccfd5d1c282db97ade5b2d360fd8930f0bcc22ed2d";
+// Storefront API Key (for storefront)
+export const MEDUSA_API_KEY = process.env.NEXT_PUBLIC_MEDUSA_API_KEY || "pk_e5cf6887065474a34a6876ae4a1d17676a1ef068d0a51f97f9eff9f2cf10b91a";
 
 // Backend URL
 export const MEDUSA_BACKEND_URL = process.env.NEXT_PUBLIC_MEDUSA_BACKEND_URL || "http://localhost:9000";

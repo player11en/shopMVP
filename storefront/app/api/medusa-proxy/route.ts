@@ -74,6 +74,28 @@ export async function POST(req: NextRequest) {
   }
 }
 
+// Handle GET requests (for testing/debugging)
+export async function GET(req: NextRequest) {
+  return NextResponse.json(
+    {
+      message: "Medusa Proxy Route",
+      usage: "Use POST method with JSON body",
+      example: {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: {
+          path: "/store/products",
+          method: "GET",
+          headers: {},
+          body: null,
+        },
+      },
+      test: "curl -X POST https://storefront-tg3r.onrender.com/api/medusa-proxy -H 'Content-Type: application/json' -d '{\"path\":\"/store/products\",\"method\":\"GET\",\"headers\":{}}'",
+    },
+    { status: 200 }
+  )
+}
+
 // Handle OPTIONS (CORS preflight)
 export async function OPTIONS(req: NextRequest) {
   const origin = req.headers.get("origin")

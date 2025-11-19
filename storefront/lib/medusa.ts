@@ -6,7 +6,7 @@ export const MEDUSA_API_KEY = process.env.NEXT_PUBLIC_MEDUSA_API_KEY || "pk_e5cf
 // Backend URL
 export const MEDUSA_BACKEND_URL = process.env.NEXT_PUBLIC_MEDUSA_BACKEND_URL || "http://localhost:9000";
 
-async function medusaFetch(path: string, init: RequestInit & { body?: any } = {}) {
+async function medusaFetch(path: string, init: Omit<RequestInit, 'body'> & { body?: any } = {}) {
   const url = `${MEDUSA_BACKEND_URL}${path}`;
   const method = (init.method || "GET").toUpperCase();
   const headers: HeadersInit = {
@@ -58,7 +58,7 @@ async function medusaFetch(path: string, init: RequestInit & { body?: any } = {}
   return fetch(url, {
     ...init,
     headers,
-    body: fetchBody,
+    body: fetchBody as BodyInit | null | undefined,
   });
 }
 

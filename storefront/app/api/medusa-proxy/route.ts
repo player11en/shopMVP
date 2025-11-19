@@ -1,5 +1,9 @@
 import { NextRequest, NextResponse } from "next/server"
 
+// Force this to be a dynamic route (not statically generated)
+export const dynamic = 'force-dynamic'
+export const runtime = 'nodejs'
+
 const MEDUSA_BACKEND_URL =
   process.env.NEXT_PUBLIC_MEDUSA_BACKEND_URL ?? "http://localhost:9000"
 

@@ -72,7 +72,7 @@ export async function fetchProducts() {
 // Helper to get default region
 async function getDefaultRegion(): Promise<string | null> {
   try {
-    // Use medusaFetch to go through proxy (handles CORS automatically)
+    // Use medusaFetch (direct fetch - CORS must be configured on backend)
     const response = await medusaFetch(`/store/regions`, {
       method: 'GET',
       headers: {

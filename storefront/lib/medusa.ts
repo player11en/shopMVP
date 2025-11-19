@@ -5,7 +5,7 @@ export const MEDUSA_API_KEY = process.env.NEXT_PUBLIC_MEDUSA_API_KEY || "pk_4c2d
 // Backend URL
 export const MEDUSA_BACKEND_URL = process.env.NEXT_PUBLIC_MEDUSA_BACKEND_URL || "http://localhost:9000";
 
-async function medusaFetch(path: string, init: RequestInit = {}) {
+async function medusaFetch(path: string, init: RequestInit & { body?: any } = {}) {
   const url = `${MEDUSA_BACKEND_URL}${path}`;
   const method = (init.method || "GET").toUpperCase();
   const headers: HeadersInit = {
@@ -50,9 +50,14 @@ async function medusaFetch(path: string, init: RequestInit = {}) {
 
   // Fallback to direct fetch (server-side or if proxy fails)
   // Since CORS is configured, this should work
+  const fetchBody = init.body && typeof init.body !== "string"
+    ? JSON.stringify(init.body)
+    : init.body;
+  
   return fetch(url, {
     ...init,
     headers,
+    body: fetchBody,
   });
 }
 
@@ -336,6 +341,7 @@ export async function createPaymentSession(cartId: string) {
   const response = await medusaFetch(`/store/carts/${cartId}/payment-sessions`, {
     method: "POST",
     headers: {
+      "x-publishable-api-key": MEDUSA_API_KEY,
       "Content-Type": "application/json",
     },
   });
@@ -402,6 +408,7 @@ export async function selectPaymentSession(cartId: string, providerId: string) {
       const response = await medusaFetch(`/store/carts/${cartId}`, {
         method: "POST",
         headers: {
+          "x-publishable-api-key": MEDUSA_API_KEY,
           "Content-Type": "application/json",
         },
         body,
@@ -462,9 +469,10 @@ export async function authorizePayment(cartId: string, data: any) {
   const response = await medusaFetch(`/store/carts/${cartId}/payment-sessions/${data.provider_id}/authorize`, {
     method: "POST",
     headers: {
+      "x-publishable-api-key": MEDUSA_API_KEY,
       "Content-Type": "application/json",
     },
-    body: JSON.stringify(data),
+    body: data,
   });
 
   if (!response.ok) {

@@ -123,8 +123,12 @@ async function getDefaultRegion(): Promise<string | null> {
         return regions[0].id;
       }
     }
-  } catch (e) {
-    console.warn('Could not fetch regions:', e);
+  } catch (e: any) {
+    // Silently fail - region is optional for product fetching
+    // Only log in development if it's not a connection error
+    if (process.env.NODE_ENV === 'development' && e?.message && !e.message.includes('fetch failed') && !e.message.includes('ECONNREFUSED')) {
+      console.warn('Could not fetch regions:', e.message);
+    }
   }
   return null;
 }

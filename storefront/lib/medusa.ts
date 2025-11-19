@@ -23,12 +23,8 @@ async function medusaFetch(path: string, init: Omit<RequestInit, 'body'> & { bod
         : (init.body as string | null | undefined);
 
     try {
-      // Use absolute URL for proxy to avoid relative path issues
-      const proxyUrl = typeof window !== "undefined" 
-        ? `${window.location.origin}/api/medusa-proxy`
-        : "/api/medusa-proxy";
-      
-      const proxyResponse = await fetch(proxyUrl, {
+      // Use relative URL - Next.js will handle it correctly
+      const proxyResponse = await fetch("/api/medusa-proxy", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -47,7 +43,14 @@ async function medusaFetch(path: string, init: Omit<RequestInit, 'body'> & { bod
       }
       // If 404, proxy route doesn't exist yet - fall through to direct fetch
       if (proxyResponse.status === 404) {
-        console.warn("⚠️ Proxy route not available (404) at:", proxyUrl);
+        const errorText = await proxyResponse.text().catch(() => "No error details");
+        console.error("❌ Proxy route 404 error:", {
+          url: "/api/medusa-proxy",
+          method: "POST",
+          path: path,
+          responseText: errorText,
+          fullUrl: typeof window !== "undefined" ? `${window.location.origin}/api/medusa-proxy` : "/api/medusa-proxy"
+        });
         console.warn("⚠️ Falling back to direct backend call (may be blocked by CORS)");
       } else {
         // Other error status - log it

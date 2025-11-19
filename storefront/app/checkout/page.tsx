@@ -59,14 +59,17 @@ const getCountryName = (code: string): string => {
 };
 
 // Stripe Payment Form Component
+// Following Medusa docs: https://docs.medusajs.com/resources/storefront-development/checkout/payment/stripe
 function StripePaymentForm({ 
   cartId, 
   paymentSession, 
+  cart,
   onSuccess, 
   onError 
 }: { 
   cartId: string; 
   paymentSession: any; 
+  cart?: any;
   onSuccess: () => void; 
   onError: (error: string) => void;
 }) {
@@ -96,10 +99,25 @@ function StripePaymentForm({
         throw new Error("Payment session not ready");
       }
 
-      // Confirm payment with Stripe
+      // Confirm payment with Stripe (following Medusa docs)
+      // Include billing details from cart for better Stripe processing
       const { error: confirmError, paymentIntent } = await stripe.confirmCardPayment(clientSecret, {
         payment_method: {
           card: cardElement,
+          billing_details: {
+            name: cart?.billing_address?.first_name 
+              ? `${cart.billing_address.first_name} ${cart.billing_address.last_name || ''}`.trim()
+              : cart?.email || undefined,
+            email: cart?.email || undefined,
+            phone: cart?.billing_address?.phone || undefined,
+            address: cart?.billing_address ? {
+              city: cart.billing_address.city || undefined,
+              country: cart.billing_address.country_code || undefined,
+              line1: cart.billing_address.address_1 || undefined,
+              line2: cart.billing_address.address_2 || undefined,
+              postal_code: cart.billing_address.postal_code || undefined,
+            } : undefined,
+          },
         },
       });
 
@@ -111,7 +129,7 @@ function StripePaymentForm({
         // Payment successful, complete order
         onSuccess();
       } else {
-        throw new Error("Payment not completed");
+        throw new Error(`Payment not completed. Status: ${paymentIntent?.status || 'unknown'}`);
       }
     } catch (e: any) {
       const errorMsg = e.message || "Failed to process payment";
@@ -417,6 +435,7 @@ function CheckoutContent() {
   };
 
   // Complete the order (after Stripe payment or for manual payment)
+  // Following Medusa docs: https://docs.medusajs.com/resources/storefront-development/checkout/payment/stripe
   const handleCompleteOrder = async () => {
     if (!cartId) {
       throw new Error("No cart ID found");
@@ -425,9 +444,36 @@ function CheckoutContent() {
     // Complete the cart (creates order)
     const result = await completeCart(cartId);
     
-    // Get order from result
+    // Check response type according to Medusa docs
+    // If type is "cart", an error occurred
+    if (result.type === "cart" && result.cart) {
+      const errorMessage = result.error?.message || "Failed to complete order";
+      throw new Error(errorMessage);
+    }
+    
+    // If type is "order", order was placed successfully
+    if (result.type === "order" && result.order) {
+      const order = result.order;
+      const orderId = order.id;
+      
+      // Store order in localStorage for guest access (no account needed)
+      localStorage.setItem(`order_${orderId}`, JSON.stringify(order));
+      
+      // Clear cart from localStorage
+      localStorage.removeItem("cart_id");
+      
+      // Redirect to order confirmation page
+      window.location.href = `/order-confirmation?order_id=${orderId}`;
+      return;
+    }
+    
+    // Fallback: try to extract order from result (for backwards compatibility)
     const order = result.data || result.order || result;
-    const orderId = order.id || result.data?.id || result.order?.id || result.id;
+    const orderId = order?.id || result.data?.id || result.order?.id || result.id;
+    
+    if (!orderId) {
+      throw new Error("Order ID not found in response");
+    }
     
     // Store order in localStorage for guest access (no account needed)
     if (order) {
@@ -852,6 +898,7 @@ function CheckoutContent() {
                   <StripePaymentForm
                     cartId={cartId!}
                     paymentSession={paymentSessionData}
+                    cart={cart}
                     onSuccess={handleCompleteOrder}
                     onError={(error: string) => {
                       setError(error);

@@ -64,74 +64,78 @@ export async function GET(
     
     const metadata = product.metadata || {};
 
-    // Fetch prices for variants from price module
+    // Fetch prices for variants using price set service
+    // In Medusa v2, prices are linked through price sets
     let productWithPrices = product;
     if (product.variants && product.variants.length > 0) {
       try {
-        const variantIds = product.variants.map((v: any) => v.id);
-        
-        // Try different methods to get prices
-        let prices: any[] = [];
-        
+        // Try to resolve price set service
+        let priceSetService: any = null;
         try {
-          // Method 1: Try price module service
-          const priceModuleService = req.scope.resolve("price") as any;
-          const [priceList] = await priceModuleService.listAndCountPrices({
-            variant_id: variantIds,
-          });
-          prices = priceList || [];
-        } catch (e1: any) {
-          console.warn(`[Product ${handle}] Price module method 1 failed:`, e1.message);
-          
-          // Method 2: Try query service
-          try {
-            const query = req.scope.resolve(ContainerRegistrationKeys.QUERY);
-            const { data: priceData } = await query.graph({
-              entity: "price",
-              fields: ["id", "amount", "currency_code", "variant_id"],
-              filters: {
-                variant_id: variantIds,
-              } as any,
-            });
-            prices = priceData || [];
-          } catch (e2: any) {
-            console.warn(`[Product ${handle}] Price query method failed:`, e2.message);
-          }
+          priceSetService = req.scope.resolve("priceSet");
+        } catch (e) {
+          // Price set service not available, skip price fetching
+          console.warn(`[Product ${handle}] Price set service not available, skipping price fetch`);
         }
 
-        console.log(`[Product ${handle}] Found ${prices.length} prices for ${variantIds.length} variants`);
+        if (priceSetService) {
+          const variantIds = product.variants.map((v: any) => v.id);
+          
+          // Get price sets for variants
+          // In Medusa v2, variants have price_set_id
+          const variantsWithPriceSets = product.variants.filter((v: any) => v.price_set_id);
+          
+          if (variantsWithPriceSets.length > 0) {
+            const priceSetIds = variantsWithPriceSets.map((v: any) => v.price_set_id);
+            
+            try {
+              const [priceSets] = await priceSetService.listAndCountPriceSets({
+                id: priceSetIds,
+              }, {
+                relations: ["prices"],
+              });
 
-        // Attach prices to variants
-        // Note: prices array amounts are in cents (e.g., 200 = €2.00)
-        productWithPrices = {
-          ...product,
-          variants: product.variants.map((variant: any) => {
-            const variantPrices = prices.filter((p: any) => p.variant_id === variant.id);
-            console.log(`[Product ${handle}] Variant ${variant.id} has ${variantPrices.length} prices`);
-            
-            // Sort prices: prefer EUR, then USD, then others
-            const sortedPrices = variantPrices.sort((a: any, b: any) => {
-              const aCode = a.currency_code?.toLowerCase();
-              const bCode = b.currency_code?.toLowerCase();
-              if (aCode === 'eur') return -1;
-              if (bCode === 'eur') return 1;
-              if (aCode === 'usd') return -1;
-              if (bCode === 'usd') return 1;
-              return 0;
-            });
-            
-            return {
-              ...variant,
-              prices: sortedPrices.map((p: any) => ({
-                amount: p.amount, // Amount is in cents
-                currency_code: p.currency_code,
-              })),
-            };
-          }),
-        };
+              // Map price sets to variants
+              const priceSetMap = new Map();
+              (priceSets || []).forEach((ps: any) => {
+                priceSetMap.set(ps.id, ps.prices || []);
+              });
+
+              productWithPrices = {
+                ...product,
+                variants: product.variants.map((variant: any) => {
+                  const prices = priceSetMap.get(variant.price_set_id) || [];
+                  
+                  // Sort prices: prefer EUR, then USD, then others
+                  const sortedPrices = prices.sort((a: any, b: any) => {
+                    const aCode = a.currency_code?.toLowerCase();
+                    const bCode = b.currency_code?.toLowerCase();
+                    if (aCode === 'eur') return -1;
+                    if (bCode === 'eur') return 1;
+                    if (aCode === 'usd') return -1;
+                    if (bCode === 'usd') return 1;
+                    return 0;
+                  });
+                  
+                  return {
+                    ...variant,
+                    prices: sortedPrices.map((p: any) => ({
+                      amount: p.amount, // Amount is in cents
+                      currency_code: p.currency_code,
+                    })),
+                  };
+                }),
+              };
+            } catch (priceSetError: any) {
+              console.warn(`[Product ${handle}] Could not fetch price sets:`, priceSetError.message);
+              // Continue without prices
+            }
+          }
+        }
       } catch (priceError: any) {
-        // If price module fails, continue without prices
-        console.error(`[Product ${handle}] Could not load prices:`, priceError.message, priceError.stack);
+        // If price fetching fails, continue without prices
+        // The frontend can use the standard API which handles prices automatically
+        console.warn(`[Product ${handle}] Could not load prices:`, priceError.message);
         productWithPrices = product;
       }
     }

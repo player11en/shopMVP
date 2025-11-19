@@ -117,31 +117,31 @@ async function handleProxyRequest({ path, method, headers, body }: {
     const isJson = contentType.includes("application/json")
     
     // Handle response body based on content type
-    let responseBody: BodyInit
+    let nextResponse: NextResponse
     if (isJson) {
-      responseBody = JSON.stringify(await response.json())
+      // Parse JSON and return it properly (don't double-stringify)
+      const jsonData = await response.json()
+      nextResponse = NextResponse.json(jsonData, {
+        status: response.status,
+        statusText: response.statusText,
+      })
     } else {
-      responseBody = await response.text()
+      // For non-JSON responses, return as text
+      const textData = await response.text()
+      nextResponse = new NextResponse(textData, {
+        status: response.status,
+        statusText: response.statusText,
+      })
     }
 
-    const nextResponse = new NextResponse(responseBody, {
-      status: response.status,
-      statusText: response.statusText,
-    })
-
-    // Copy headers but exclude content-encoding to avoid decoding issues
+    // Copy headers but exclude content-encoding and content-length to avoid decoding issues
     response.headers.forEach((value, key) => {
       const lowerKey = key.toLowerCase()
-      // Skip content-encoding and content-length as we're handling the body ourselves
-      if (lowerKey !== "content-encoding" && lowerKey !== "content-length") {
+      // Skip content-encoding and content-length as NextResponse handles these automatically
+      if (lowerKey !== "content-encoding" && lowerKey !== "content-length" && lowerKey !== "content-type") {
         nextResponse.headers.set(key, value)
       }
     })
-
-    // Set content type if JSON
-    if (isJson) {
-      nextResponse.headers.set("Content-Type", "application/json")
-    }
 
     // Set CORS headers - use actual origin, not wildcard (required for credentials)
     if (!nextResponse.headers.has("Access-Control-Allow-Origin")) {

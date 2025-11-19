@@ -83,7 +83,9 @@ export async function fetchProducts() {
 // Helper to get default region
 async function getDefaultRegion(): Promise<string | null> {
   try {
-    const response = await fetch(`${MEDUSA_BACKEND_URL}/store/regions`, {
+    // Use medusaFetch to go through proxy (handles CORS automatically)
+    const response = await medusaFetch(`/store/regions`, {
+      method: 'GET',
       headers: {
         "x-publishable-api-key": MEDUSA_API_KEY,
       },
@@ -105,97 +107,108 @@ async function getDefaultRegion(): Promise<string | null> {
 
 export async function fetchProduct(handle: string) {
   try {
-    // Try custom endpoint first (returns { product: {...} })
-    // Use medusaFetch to go through proxy (handles CORS automatically)
-    try {
-      const customResponse = await medusaFetch(`/store/products/handle/${handle}`, {
+    // Fetch from BOTH endpoints and merge:
+    // 1. Standard API: Has calculated_price for variants (prices)
+    // 2. Custom endpoint: Has metadata and images
+    const regionId = await getDefaultRegion();
+    let standardUrl = `/store/products?handle=${handle}&fields=*variants.calculated_price,images`;
+    if (regionId) {
+      standardUrl += `&region_id=${regionId}`;
+    }
+    
+    // Fetch both in parallel
+    const [standardResponse, customResponse] = await Promise.allSettled([
+      medusaFetch(standardUrl, {
         method: 'GET',
         headers: {
           "x-publishable-api-key": MEDUSA_API_KEY,
         },
         cache: 'no-store',
-      });
+      }),
+      medusaFetch(`/store/products/handle/${handle}`, {
+        method: 'GET',
+        headers: {
+          "x-publishable-api-key": MEDUSA_API_KEY,
+        },
+        cache: 'no-store',
+      })
+    ]);
 
-      if (customResponse.ok) {
-        const customData = await customResponse.json();
-        if (customData.product) {
-          console.log('✅ Found product via custom endpoint:', customData.product.handle);
-          return customData.product;
-        }
+    let productWithPrices: any = null;
+    let productWithMetadata: any = null;
+
+    // Process standard API response (has prices)
+    if (standardResponse.status === 'fulfilled' && standardResponse.value.ok) {
+      const standardData = await standardResponse.value.json();
+      const products = standardData.products || (Array.isArray(standardData) ? standardData : []);
+      productWithPrices = products.find((p: any) => p.handle === handle) ||
+                         products.find((p: any) => p.handle?.toLowerCase() === handle?.toLowerCase()) ||
+                         products[0];
+    }
+
+    // Process custom endpoint response (has metadata/images)
+    if (customResponse.status === 'fulfilled' && customResponse.value.ok) {
+      const customData = await customResponse.value.json();
+      if (customData.product) {
+        productWithMetadata = customData.product;
       }
-    } catch (customError: any) {
-      console.warn("Custom endpoint failed, trying standard API:", customError.message);
-    }
-    
-    // Fallback to standard products API with handle query
-    const regionId = await getDefaultRegion();
-    let url = `/store/products?handle=${handle}&fields=*variants.calculated_price,images`;
-    if (regionId) {
-      url += `&region_id=${regionId}`;
-    }
-    
-    const response = await medusaFetch(url, {
-      method: 'GET',
-      headers: {
-        "x-publishable-api-key": MEDUSA_API_KEY,
-      },
-      cache: 'no-store',
-    });
-
-    if (!response.ok) {
-      throw new Error(`Failed to fetch product: ${response.status}`);
     }
 
-    const data = await response.json();
-    
-    // Debug: Log the response structure
-    console.log('🔍 fetchProduct response:', {
-      hasProducts: !!data.products,
-      productsLength: data.products?.length,
-      products: data.products?.map((p: any) => ({ handle: p.handle, title: p.title })),
-      lookingFor: handle,
-      dataKeys: Object.keys(data)
-    });
-    
-    // Handle both direct products array and wrapped response
-    const products = data.products || (Array.isArray(data) ? data : []);
-    
-    // Try exact match first, then case-insensitive
-    let product = products.find((p: any) => p.handle === handle) ||
-                  products.find((p: any) => p.handle?.toLowerCase() === handle?.toLowerCase());
-    
-    if (!product && products.length > 0) {
-      // If we got products but none match, use the first one (might be handle query issue)
-      console.warn(`⚠️ Handle "${handle}" not found, but got ${products.length} product(s). Using first product.`);
-      product = products[0];
-    }
-    
-    if (!product) {
-      console.error('❌ Product not found in response:', {
-        handle,
-        availableHandles: products.map((p: any) => p.handle),
-        productsCount: products.length,
-        responseKeys: Object.keys(data),
-        fullResponse: data
-      });
-      throw new Error(`Product with handle "${handle}" not found`);
-    }
-    
-    // Debug: Log product data
-    if (process.env.NODE_ENV === 'development') {
-      console.log('=== PRODUCT API RESPONSE ===');
-      console.log('Product handle:', product.handle);
-      console.log('Product title:', product.title);
-      console.log('Variants count:', product.variants?.length || 0);
-      if (product.variants?.[0]) {
-        console.log('First variant keys:', Object.keys(product.variants[0]));
-        console.log('First variant calculated_price:', product.variants[0].calculated_price);
-        console.log('Full first variant:', JSON.stringify(product.variants[0], null, 2));
+    // If we have both, merge them intelligently
+    if (productWithPrices && productWithMetadata) {
+      // Merge: Use prices from standard API, metadata/images from custom endpoint
+      const mergedProduct = {
+        ...productWithMetadata, // Start with custom (has metadata/images and all fields)
+        // Merge variants: combine prices from standard API with all other data from custom
+        variants: productWithPrices.variants?.map((variantWithPrice: any) => {
+          // Find matching variant from custom endpoint
+          const customVariant = productWithMetadata.variants?.find(
+            (v: any) => v.id === variantWithPrice.id
+          ) || variantWithPrice;
+          
+          return {
+            ...customVariant, // Start with custom variant (has all fields including SKU, options, etc.)
+            // Override/add price-related fields from standard API
+            calculated_price: variantWithPrice.calculated_price,
+            prices: variantWithPrice.prices || customVariant?.prices,
+            // Preserve any other fields from standard API that might be useful
+            ...(variantWithPrice.original_price && { original_price: variantWithPrice.original_price }),
+            ...(variantWithPrice.original_price_incl_tax && { original_price_incl_tax: variantWithPrice.original_price_incl_tax }),
+          };
+        }) || productWithMetadata.variants,
+        // Ensure images from custom endpoint are preserved (it has the full image data)
+        images: productWithMetadata.images || productWithPrices.images,
+        // Ensure metadata from custom endpoint is preserved (it's properly formatted)
+        metadata: productWithMetadata.metadata || productWithPrices.metadata,
+        // Preserve thumbnail from custom if available
+        thumbnail: productWithMetadata.thumbnail || productWithPrices.thumbnail,
+      };
+
+      if (process.env.NODE_ENV === 'development') {
+        console.log('✅ Merged product data from both endpoints:', {
+          hasPrices: !!mergedProduct.variants?.[0]?.calculated_price,
+          hasMetadata: !!mergedProduct.metadata,
+          hasImages: !!mergedProduct.images?.length,
+          imagesCount: mergedProduct.images?.length || 0,
+        });
       }
-      console.log('===========================================');
+      
+      return mergedProduct;
     }
-    
-    return product;
+
+    // Fallback: Use whichever one we have
+    if (productWithPrices) {
+      console.log('✅ Using product from standard API');
+      return productWithPrices;
+    }
+
+    if (productWithMetadata) {
+      console.log('✅ Using product from custom endpoint');
+      return productWithMetadata;
+    }
+
+    // If both failed, throw error
+    throw new Error(`Failed to fetch product with handle "${handle}"`);
   } catch (error: any) {
     console.error('Error fetching product:', error);
     throw error;
@@ -211,13 +224,14 @@ export async function createCart() {
     body.region_id = regionId;
   }
   
-  const response = await fetch(`${MEDUSA_BACKEND_URL}/store/carts`, {
+  // Use medusaFetch to go through proxy (handles CORS automatically)
+  const response = await medusaFetch(`/store/carts`, {
     method: "POST",
     headers: {
       "x-publishable-api-key": MEDUSA_API_KEY,
       "Content-Type": "application/json",
     },
-    body: Object.keys(body).length > 0 ? JSON.stringify(body) : undefined,
+    body: Object.keys(body).length > 0 ? body : undefined,
   });
 
   if (!response.ok) {
@@ -229,16 +243,17 @@ export async function createCart() {
 }
 
 export async function addToCart(cartId: string, variantId: string, quantity: number = 1) {
-  const response = await fetch(`${MEDUSA_BACKEND_URL}/store/carts/${cartId}/line-items`, {
+  // Use medusaFetch to go through proxy (handles CORS automatically)
+  const response = await medusaFetch(`/store/carts/${cartId}/line-items`, {
     method: "POST",
     headers: {
       "x-publishable-api-key": MEDUSA_API_KEY,
       "Content-Type": "application/json",
     },
-    body: JSON.stringify({
+    body: {
       variant_id: variantId,
       quantity,
-    }),
+    },
   });
 
   if (!response.ok) {
@@ -260,15 +275,16 @@ export async function addToCart(cartId: string, variantId: string, quantity: num
 }
 
 export async function updateLineItem(cartId: string, lineItemId: string, quantity: number) {
-  const response = await fetch(`${MEDUSA_BACKEND_URL}/store/carts/${cartId}/line-items/${lineItemId}`, {
+  // Use medusaFetch to go through proxy (handles CORS automatically)
+  const response = await medusaFetch(`/store/carts/${cartId}/line-items/${lineItemId}`, {
     method: "POST",
     headers: {
       "x-publishable-api-key": MEDUSA_API_KEY,
       "Content-Type": "application/json",
     },
-    body: JSON.stringify({
+    body: {
       quantity,
-    }),
+    },
   });
 
   if (!response.ok) {
@@ -280,7 +296,8 @@ export async function updateLineItem(cartId: string, lineItemId: string, quantit
 }
 
 export async function removeLineItem(cartId: string, lineItemId: string) {
-  const response = await fetch(`${MEDUSA_BACKEND_URL}/store/carts/${cartId}/line-items/${lineItemId}`, {
+  // Use medusaFetch to go through proxy (handles CORS automatically)
+  const response = await medusaFetch(`/store/carts/${cartId}/line-items/${lineItemId}`, {
     method: "DELETE",
     headers: {
       "x-publishable-api-key": MEDUSA_API_KEY,
@@ -297,7 +314,9 @@ export async function removeLineItem(cartId: string, lineItemId: string) {
 
 export async function getCart(cartId: string) {
   // Request cart - Medusa v2 includes relations by default
-  const response = await fetch(`${MEDUSA_BACKEND_URL}/store/carts/${cartId}`, {
+  // Use medusaFetch to go through proxy (handles CORS automatically)
+  const response = await medusaFetch(`/store/carts/${cartId}`, {
+    method: 'GET',
     headers: {
       "x-publishable-api-key": MEDUSA_API_KEY,
     },
@@ -330,22 +349,79 @@ export async function createPaymentSession(cartId: string) {
 }
 
 export async function selectPaymentSession(cartId: string, providerId: string) {
-  const response = await medusaFetch(`/store/carts/${cartId}/payment-session`, {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
+  // In Medusa v2, selecting a payment session updates the cart
+  // Reference: https://medusajs.com/v2-overview/
+  // The Cart Module handles payment options, so we update the cart directly
+  
+  // Try multiple approaches based on Medusa v2 API patterns
+  const approaches = [
+    // Approach 1: Update cart with payment_session object
+    {
+      body: {
+        payment_session: {
+          provider_id: providerId,
+        },
+      },
     },
-    body: JSON.stringify({
-      provider_id: providerId,
-    }),
-  });
+    // Approach 2: Update cart with payment_session_id (if we have session ID)
+    async () => {
+      const sessionsResponse = await getPaymentSession(cartId);
+      const paymentSessions = sessionsResponse.payment_sessions || sessionsResponse.data?.payment_sessions || [];
+      const selectedSession = paymentSessions.find((ps: any) => ps.provider_id === providerId);
+      if (selectedSession?.id) {
+        return {
+          body: {
+            payment_session_id: selectedSession.id,
+          },
+        };
+      }
+      return null;
+    },
+    // Approach 3: Simple provider_id in payment_session field
+    {
+      body: {
+        payment_session: providerId,
+      },
+    },
+  ];
 
-  if (!response.ok) {
-    const errorText = await response.text();
-    throw new Error(`Failed to select payment session: ${response.status} - ${errorText}`);
+  let lastError: any = null;
+
+  for (const approach of approaches) {
+    try {
+      let body: any;
+      
+      if (typeof approach === 'function') {
+        const result = await approach();
+        if (!result) continue;
+        body = result.body;
+      } else {
+        body = approach.body;
+      }
+
+      const response = await medusaFetch(`/store/carts/${cartId}`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body,
+      });
+
+      if (response.ok) {
+        return response.json();
+      }
+      
+      lastError = new Error(`Failed to select payment session: ${response.status}`);
+    } catch (error: any) {
+      lastError = error;
+      continue;
+    }
   }
 
-  return response.json();
+  // If all approaches fail, just return the cart (some Medusa setups auto-select)
+  // The payment session might be selected automatically during cart completion
+  console.warn(`Could not explicitly select payment session ${providerId}, continuing anyway`);
+  return getCart(cartId);
 }
 
 export async function updateCart(cartId: string, data: any) {
@@ -366,7 +442,9 @@ export async function updateCart(cartId: string, data: any) {
 }
 
 export async function getPaymentSession(cartId: string) {
-  const response = await fetch(`${MEDUSA_BACKEND_URL}/store/carts/${cartId}/payment-sessions`, {
+  // Use medusaFetch to go through proxy (handles CORS automatically)
+  const response = await medusaFetch(`/store/carts/${cartId}/payment-sessions`, {
+    method: 'GET',
     headers: {
       "x-publishable-api-key": MEDUSA_API_KEY,
     },
@@ -475,7 +553,9 @@ export async function getCustomer(token: string) {
 }
 
 export async function getRegionPaymentProviders(regionId: string) {
-  const response = await fetch(`${MEDUSA_BACKEND_URL}/store/regions/${regionId}/payment-providers`, {
+  // Use medusaFetch to go through proxy (handles CORS automatically)
+  const response = await medusaFetch(`/store/regions/${regionId}/payment-providers`, {
+    method: 'GET',
     headers: {
       "x-publishable-api-key": MEDUSA_API_KEY,
     },

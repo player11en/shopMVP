@@ -50,7 +50,26 @@ export async function POST(req: NextRequest) {
 
     // Get response body as array buffer (handles all content types)
     const resBody = await backendRes.arrayBuffer()
-    const resHeaders = new Headers(backendRes.headers)
+    const resHeaders = new Headers()
+
+    // Copy headers but exclude problematic ones
+    backendRes.headers.forEach((value, key) => {
+      const lowerKey = key.toLowerCase()
+      // Skip content-encoding, content-length, and transfer-encoding
+      // NextResponse will handle these automatically
+      if (
+        lowerKey !== "content-encoding" &&
+        lowerKey !== "content-length" &&
+        lowerKey !== "transfer-encoding"
+      ) {
+        resHeaders.set(key, value)
+      }
+    })
+
+    // Set content-type if not already set
+    if (!resHeaders.has("content-type")) {
+      resHeaders.set("content-type", backendRes.headers.get("content-type") || "application/json")
+    }
 
     // Set CORS headers for browser requests
     const origin = req.headers.get("origin")

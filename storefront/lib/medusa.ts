@@ -8,68 +8,20 @@ export const MEDUSA_BACKEND_URL = process.env.NEXT_PUBLIC_MEDUSA_BACKEND_URL || 
 
 async function medusaFetch(path: string, init: Omit<RequestInit, 'body'> & { body?: any } = {}) {
   const url = `${MEDUSA_BACKEND_URL}${path}`;
-  const method = (init.method || "GET").toUpperCase();
   const headers: HeadersInit = {
     "x-publishable-api-key": MEDUSA_API_KEY,
     "Content-Type": "application/json",
     ...(init.headers || {}),
   };
 
-  // Always use proxy for client-side requests to avoid CORS issues
-  if (typeof window !== "undefined") {
-    const body =
-      init.body && typeof init.body !== "string"
-        ? JSON.stringify(init.body)
-        : (init.body as string | null | undefined);
-
-    try {
-      // Use relative URL - Next.js will handle it correctly
-      const proxyResponse = await fetch("/api/medusa-proxy", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          path,
-          method,
-          headers,
-          body: body ?? null,
-        }),
-      });
-
-      // If proxy works, use it
-      if (proxyResponse.ok) {
-        return proxyResponse;
-      }
-      // If 404, proxy route doesn't exist yet - fall through to direct fetch
-      if (proxyResponse.status === 404) {
-        const errorText = await proxyResponse.text().catch(() => "No error details");
-        console.error("❌ Proxy route 404 error:", {
-          url: "/api/medusa-proxy",
-          method: "POST",
-          path: path,
-          responseText: errorText,
-          fullUrl: typeof window !== "undefined" ? `${window.location.origin}/api/medusa-proxy` : "/api/medusa-proxy"
-        });
-        console.warn("⚠️ Falling back to direct backend call (may be blocked by CORS)");
-      } else {
-        // Other error status - log it
-        console.warn(`⚠️ Proxy returned status ${proxyResponse.status}, falling back to direct call`);
-      }
-    } catch (proxyError: any) {
-      console.warn("⚠️ Proxy request failed:", proxyError?.message || proxyError);
-      console.warn("⚠️ Falling back to direct backend call");
-    }
-  }
-
-  // Fallback to direct fetch (server-side or if proxy fails)
-  // Since CORS is configured, this should work
+  // Use direct fetch - CORS should be configured on the backend
   const fetchBody = init.body && typeof init.body !== "string"
     ? JSON.stringify(init.body)
     : init.body;
   
   return fetch(url, {
     ...init,
+    method: init.method || "GET",
     headers,
     body: fetchBody as BodyInit | null | undefined,
   });
@@ -78,7 +30,7 @@ async function medusaFetch(path: string, init: Omit<RequestInit, 'body'> & { bod
 // API helper functions
 export async function fetchProducts() {
   try {
-    // Use medusaFetch to go through proxy (handles CORS automatically)
+    // Use medusaFetch (direct fetch - CORS must be configured on backend)
     const response = await medusaFetch(`/store/products?fields=*images`, {
       method: 'GET',
       headers: {

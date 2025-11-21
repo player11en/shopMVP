@@ -25,6 +25,11 @@ export default defineConfig({
     }
   },
   modules: [
+    // Cart module - provides /store/carts endpoints including payment-sessions
+    {
+      resolve: "@medusajs/medusa/cart",
+    },
+    // Payment module - provides payment providers
     {
       resolve: "@medusajs/medusa/payment",
       options: {

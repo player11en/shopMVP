@@ -7,24 +7,67 @@ export const MEDUSA_API_KEY = process.env.NEXT_PUBLIC_MEDUSA_API_KEY || "pk_e5cf
 export const MEDUSA_BACKEND_URL = process.env.NEXT_PUBLIC_MEDUSA_BACKEND_URL || "http://localhost:9000";
 
 async function medusaFetch(path: string, init: Omit<RequestInit, 'body'> & { body?: any } = {}) {
-  const url = `${MEDUSA_BACKEND_URL}${path}`;
+  const method = (init.method || "GET").toUpperCase()
   const headers: HeadersInit = {
     "x-publishable-api-key": MEDUSA_API_KEY,
     "Content-Type": "application/json",
     ...(init.headers || {}),
-  };
+  }
 
-  // Use direct fetch - CORS should be configured on the backend
-  const fetchBody = init.body && typeof init.body !== "string"
-    ? JSON.stringify(init.body)
-    : init.body;
+  const fetchBody =
+    init.body && typeof init.body !== "string"
+      ? JSON.stringify(init.body)
+      : init.body
+
+  // Server-side: Use direct fetch (no CORS issues on server)
+  // Client-side: Use proxy to avoid CORS
+  const isServerSide = typeof window === "undefined"
   
-  return fetch(url, {
-    ...init,
-    method: init.method || "GET",
-    headers,
-    body: fetchBody as BodyInit | null | undefined,
-  });
+  if (isServerSide) {
+    // Server-side: Direct fetch to backend (no CORS)
+    const url = `${MEDUSA_BACKEND_URL}${path}`
+    return fetch(url, {
+      ...init,
+      method,
+      headers,
+      body: fetchBody as BodyInit | null | undefined,
+    })
+  }
+
+  // Client-side: Use proxy to avoid CORS
+  try {
+    const proxyUrl = `${window.location.origin}/api/medusa-proxy`
+    
+    const proxyResponse = await fetch(proxyUrl, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        path,
+        method,
+        headers,
+        body: fetchBody ?? null,
+      }),
+    })
+
+    if (!proxyResponse.ok) {
+      const errorData = await proxyResponse.json().catch(() => ({ error: 'Unknown error' }))
+      console.warn("⚠️ Proxy request failed:", {
+        status: proxyResponse.status,
+        statusText: proxyResponse.statusText,
+        url: proxyUrl,
+        path,
+        responsePreview: JSON.stringify(errorData).substring(0, 200)
+      })
+      throw new Error(`Proxy failed: ${proxyResponse.status} - ${errorData.error || proxyResponse.statusText}`)
+    }
+
+    return proxyResponse
+  } catch (proxyError: any) {
+    console.error("❌ Proxy request error:", proxyError?.message || proxyError)
+    throw new Error(`Medusa fetch failed: ${proxyError.message || 'Network error'}`)
+  }
 }
 
 // API helper functions
@@ -308,6 +351,7 @@ export async function removeLineItem(cartId: string, lineItemId: string) {
 export async function getCart(cartId: string) {
   // Request cart - Medusa v2 includes relations by default
   // Use medusaFetch to go through proxy (handles CORS automatically)
+  // Start with basic request - Medusa v2 often includes payment_sessions and region by default
   const response = await medusaFetch(`/store/carts/${cartId}`, {
     method: 'GET',
     headers: {
@@ -489,18 +533,18 @@ export async function completeCart(cartId: string) {
 
 // Customer authentication functions
 export async function registerCustomer(email: string, password: string, firstName?: string, lastName?: string) {
-  const response = await fetch(`${MEDUSA_BACKEND_URL}/store/customers`, {
+  const response = await medusaFetch(`/store/customers`, {
     method: "POST",
     headers: {
       "x-publishable-api-key": MEDUSA_API_KEY,
       "Content-Type": "application/json",
     },
-    body: JSON.stringify({
+    body: {
       email,
       password,
       first_name: firstName,
       last_name: lastName,
-    }),
+    },
   });
 
   if (!response.ok) {
@@ -512,16 +556,16 @@ export async function registerCustomer(email: string, password: string, firstNam
 }
 
 export async function loginCustomer(email: string, password: string) {
-  const response = await fetch(`${MEDUSA_BACKEND_URL}/auth/user/emailpass`, {
+  const response = await medusaFetch(`/auth/user/emailpass`, {
     method: "POST",
     headers: {
       "x-publishable-api-key": MEDUSA_API_KEY,
       "Content-Type": "application/json",
     },
-    body: JSON.stringify({
+    body: {
       email,
       password,
-    }),
+    },
   });
 
   if (!response.ok) {
@@ -533,7 +577,8 @@ export async function loginCustomer(email: string, password: string) {
 }
 
 export async function getCustomer(token: string) {
-  const response = await fetch(`${MEDUSA_BACKEND_URL}/store/customers/me`, {
+  const response = await medusaFetch(`/store/customers/me`, {
+    method: "GET",
     headers: {
       "x-publishable-api-key": MEDUSA_API_KEY,
       "Authorization": `Bearer ${token}`,
@@ -568,7 +613,8 @@ export async function getRegionPaymentProviders(regionId: string) {
 
 // Order functions
 export async function getOrders(token: string) {
-  const response = await fetch(`${MEDUSA_BACKEND_URL}/store/orders`, {
+  const response = await medusaFetch(`/store/orders`, {
+    method: "GET",
     headers: {
       "x-publishable-api-key": MEDUSA_API_KEY,
       "Authorization": `Bearer ${token}`,
@@ -584,7 +630,8 @@ export async function getOrders(token: string) {
 }
 
 export async function getOrder(orderId: string, token: string) {
-  const response = await fetch(`${MEDUSA_BACKEND_URL}/store/orders/${orderId}`, {
+  const response = await medusaFetch(`/store/orders/${orderId}`, {
+    method: "GET",
     headers: {
       "x-publishable-api-key": MEDUSA_API_KEY,
       "Authorization": `Bearer ${token}`,

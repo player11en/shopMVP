@@ -1,135 +1,180 @@
-import { NextRequest, NextResponse } from "next/server"
+import { NextRequest, NextResponse } from 'next/server';
 
-// Force this to be a dynamic route (not statically generated)
-export const dynamic = 'force-dynamic'
-export const runtime = 'nodejs'
+const MEDUSA_BACKEND_URL = process.env.NEXT_PUBLIC_MEDUSA_BACKEND_URL || 'http://localhost:9000';
+// Support both environment variable names for flexibility
+const MEDUSA_PUBLISHABLE_KEY = process.env.NEXT_PUBLIC_MEDUSA_API_KEY || process.env.NEXT_PUBLIC_MEDUSA_PUBLISHABLE_KEY;
 
-const MEDUSA_BACKEND_URL =
-  process.env.NEXT_PUBLIC_MEDUSA_BACKEND_URL ?? "http://localhost:9000"
-
-type ProxyPayload = {
-  path: string
-  method?: string
-  headers?: Record<string, string>
-  body?: any
-}
-
-export async function POST(req: NextRequest) {
+export async function POST(request: NextRequest) {
   try {
-    const payload = (await req.json()) as ProxyPayload
-    const { path, method = "GET", headers = {}, body } = payload
+    const body = await request.json();
+    const { path, method = 'GET', headers: customHeaders = {}, body: requestBody } = body;
 
     if (!path) {
+      return NextResponse.json({ error: 'Path is required' }, { status: 400 });
+    }
+
+    if (!MEDUSA_PUBLISHABLE_KEY) {
+      console.error('❌ NEXT_PUBLIC_MEDUSA_API_KEY or NEXT_PUBLIC_MEDUSA_PUBLISHABLE_KEY is not set');
       return NextResponse.json(
-        { message: "Missing `path` in medusa-proxy payload" },
-        { status: 400 }
-      )
+        { error: 'Medusa publishable key not configured' },
+        { status: 500 }
+      );
     }
 
-    // Build target URL safely
-    const targetUrl = new URL(path, MEDUSA_BACKEND_URL).toString()
-
-    // Prepare headers - ensure API key is always included
-    const forwardHeaders = new Headers(headers as Record<string, string>)
-    const apiKey = process.env.NEXT_PUBLIC_MEDUSA_API_KEY || headers?.["x-publishable-api-key"]
-    if (apiKey && !forwardHeaders.has("x-publishable-api-key")) {
-      forwardHeaders.set("x-publishable-api-key", apiKey)
-    }
-
-    const upperMethod = method.toUpperCase()
-    const hasBody = !["GET", "HEAD"].includes(upperMethod)
-
-    // Forward request to backend
-    const backendRes = await fetch(targetUrl, {
+    const url = `${MEDUSA_BACKEND_URL}${path}`;
+    const upperMethod = method.toUpperCase();
+    
+    console.log(`🔄 Proxying ${upperMethod} request to:`, url);
+    
+    const fetchOptions: RequestInit = {
       method: upperMethod,
-      headers: forwardHeaders,
-      body:
-        hasBody && body != null
-          ? typeof body === "string"
-            ? body
-            : JSON.stringify(body)
-          : undefined,
-      redirect: "manual",
-    })
+      headers: {
+        'Content-Type': 'application/json',
+        'x-publishable-api-key': MEDUSA_PUBLISHABLE_KEY,
+        ...customHeaders,
+      },
+    };
 
-    // Get response body as array buffer (handles all content types)
-    const resBody = await backendRes.arrayBuffer()
-    const resHeaders = new Headers()
-
-    // Copy headers but exclude problematic ones
-    backendRes.headers.forEach((value, key) => {
-      const lowerKey = key.toLowerCase()
-      // Skip content-encoding, content-length, and transfer-encoding
-      // NextResponse will handle these automatically
-      if (
-        lowerKey !== "content-encoding" &&
-        lowerKey !== "content-length" &&
-        lowerKey !== "transfer-encoding"
-      ) {
-        resHeaders.set(key, value)
-      }
-    })
-
-    // Set content-type if not already set
-    if (!resHeaders.has("content-type")) {
-      resHeaders.set("content-type", backendRes.headers.get("content-type") || "application/json")
+    // Only add body for methods that support it
+    if (requestBody !== null && requestBody !== undefined && !['GET', 'HEAD'].includes(upperMethod)) {
+      fetchOptions.body = typeof requestBody === 'string' ? requestBody : JSON.stringify(requestBody);
+    }
+    
+    const response = await fetch(url, fetchOptions);
+    
+    // Get the response text first
+    const text = await response.text();
+    
+    // Try to parse as JSON, fallback to returning error info
+    let data;
+    try {
+      data = text ? JSON.parse(text) : {};
+    } catch (e) {
+      // If response is not JSON, it might be HTML error page or plain text
+      console.error('❌ Medusa response is not JSON:', {
+        status: response.status,
+        statusText: response.statusText,
+        contentType: response.headers.get('content-type'),
+        preview: text.substring(0, 200)
+      });
+      
+      // Preserve the original status code from Medusa
+      return NextResponse.json(
+        { 
+          error: 'Invalid response from Medusa backend',
+          message: text.substring(0, 500),
+          url,
+          status: response.status,
+          statusText: response.statusText
+        },
+        { status: response.status } // Preserve original status code
+      );
     }
 
-    // Set CORS headers for browser requests
-    const origin = req.headers.get("origin")
-    if (origin) {
-      resHeaders.set("Access-Control-Allow-Origin", origin)
-      resHeaders.set("Access-Control-Allow-Credentials", "true")
+    // Log success or error
+    if (response.ok) {
+      console.log(`✅ Proxy response status: ${response.status}`);
+    } else {
+      console.error(`❌ Medusa backend error: ${response.status}`, {
+        url,
+        error: data.error || data.message || 'Unknown error',
+        data: JSON.stringify(data).substring(0, 200)
+      });
     }
-
-    return new NextResponse(resBody, {
-      status: backendRes.status,
-      headers: resHeaders,
-    })
-  } catch (error: any) {
+    
+    // Preserve the original status code from Medusa (don't always return 200)
+    return NextResponse.json(data, { status: response.status });
+    
+  } catch (error) {
+    console.error('❌ Proxy error:', error);
     return NextResponse.json(
-      {
-        message: "Proxy request failed",
-        error: error.message,
+      { 
+        error: 'Proxy request failed',
+        details: error instanceof Error ? error.message : 'Unknown error'
       },
       { status: 500 }
-    )
+    );
   }
 }
 
-// Handle GET requests (for testing/debugging)
-export async function GET(req: NextRequest) {
-  return NextResponse.json(
-    {
-      message: "Medusa Proxy Route",
-      usage: "Use POST method with JSON body",
-      example: {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: {
-          path: "/store/products",
-          method: "GET",
-          headers: {},
-          body: null,
-        },
-      },
-      test: "curl -X POST https://storefront-tg3r.onrender.com/api/medusa-proxy -H 'Content-Type: application/json' -d '{\"path\":\"/store/products\",\"method\":\"GET\",\"headers\":{}}'",
-    },
-    { status: 200 }
-  )
-}
+export async function GET(request: NextRequest) {
+  try {
+    const searchParams = request.nextUrl.searchParams;
+    const path = searchParams.get('path');
 
-// Handle OPTIONS (CORS preflight)
-export async function OPTIONS(req: NextRequest) {
-  const origin = req.headers.get("origin")
-  return new NextResponse(null, {
-    status: 204,
-    headers: {
-      "Access-Control-Allow-Origin": origin || "*",
-      "Access-Control-Allow-Methods": "GET, POST, PUT, DELETE, OPTIONS",
-      "Access-Control-Allow-Headers": "Content-Type, Authorization, x-publishable-api-key",
-      "Access-Control-Max-Age": "86400",
-    },
-  })
+    if (!path) {
+      return NextResponse.json({ error: 'Path is required' }, { status: 400 });
+    }
+
+    if (!MEDUSA_PUBLISHABLE_KEY) {
+      console.error('❌ NEXT_PUBLIC_MEDUSA_API_KEY or NEXT_PUBLIC_MEDUSA_PUBLISHABLE_KEY is not set');
+      return NextResponse.json(
+        { error: 'Medusa publishable key not configured' },
+        { status: 500 }
+      );
+    }
+
+    const url = `${MEDUSA_BACKEND_URL}${path}`;
+    
+    console.log(`🔄 Proxying GET request to:`, url);
+    
+    const response = await fetch(url, {
+      method: 'GET',
+      headers: {
+        'Content-Type': 'application/json',
+        'x-publishable-api-key': MEDUSA_PUBLISHABLE_KEY,
+      },
+    });
+
+    const text = await response.text();
+    
+    // Try to parse as JSON
+    let data;
+    try {
+      data = text ? JSON.parse(text) : {};
+    } catch (e) {
+      console.error('❌ Medusa response is not JSON:', {
+        status: response.status,
+        statusText: response.statusText,
+        contentType: response.headers.get('content-type'),
+        preview: text.substring(0, 200)
+      });
+      
+      // Preserve the original status code from Medusa
+      return NextResponse.json(
+        { 
+          error: 'Invalid response from Medusa backend',
+          message: text.substring(0, 500),
+          url,
+          status: response.status,
+          statusText: response.statusText
+        },
+        { status: response.status } // Preserve original status code
+      );
+    }
+
+    // Log success or error
+    if (response.ok) {
+      console.log(`✅ Proxy response status: ${response.status}`);
+    } else {
+      console.error(`❌ Medusa backend error: ${response.status}`, {
+        url,
+        error: data.error || data.message || 'Unknown error',
+        data: JSON.stringify(data).substring(0, 200)
+      });
+    }
+    
+    // Preserve the original status code from Medusa
+    return NextResponse.json(data, { status: response.status });
+  } catch (error) {
+    console.error('❌ Proxy error:', error);
+    return NextResponse.json(
+      { 
+        error: 'Proxy request failed',
+        details: error instanceof Error ? error.message : 'Unknown error'
+      },
+      { status: 500 }
+    );
+  }
 }
 

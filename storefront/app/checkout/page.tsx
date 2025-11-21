@@ -219,89 +219,91 @@ function CheckoutContent() {
       }
 
       try {
+        // Single API call to get cart - it may already include payment sessions
         const cartData = await getCart(cartId);
-        setCart(cartData.cart);
+        const cart = cartData.cart || cartData;
+        setCart(cart);
 
-        // Load payment providers from region (preferred)
-        let regionProviders: any[] = [];
-        if (cartData.cart?.region_id) {
+        // Helper function to format provider names
+        const formatProviderName = (id: string) => {
+          if (id === 'stripe') return '💳 Stripe';
+          if (id === 'bank_transfer') return '🏦 Bank Transfer';
+          if (id === 'paypal') return '💙 PayPal';
+          if (id === 'pp_system_default') return 'Manual Payment (Test)';
+          return id.replace(/^pp_/, '').replace(/_/g, ' ').replace(/\b\w/g, (l: string) => l.toUpperCase());
+        };
+
+        // Check if cart already has payment sessions (Medusa v2 often includes them)
+        let providers: any[] = [];
+        
+        if (cart.payment_sessions && cart.payment_sessions.length > 0) {
+          // Use payment sessions from cart response (no extra API call needed!)
+          console.log("✅ Using payment sessions from cart response");
+          providers = cart.payment_sessions.map((ps: any) => ({
+            id: ps.provider_id,
+            name: formatProviderName(ps.provider_id),
+            session: ps, // Store the session for later use
+          }));
+        } else if (cart.region?.payment_providers && cart.region.payment_providers.length > 0) {
+          // Use payment providers from region in cart response
+          console.log("✅ Using payment providers from region in cart response");
+          providers = cart.region.payment_providers.map((provider: any) => ({
+            id: provider.id || provider.provider_id,
+            name: formatProviderName(provider.id || provider.provider_id),
+          }));
+        } else if (cart.region_id) {
+          // Fallback: Fetch payment providers from region (one API call)
           try {
-            const providerResponse = await getRegionPaymentProviders(cartData.cart.region_id);
-            regionProviders = providerResponse.region?.payment_providers || [];
+            console.log("🔄 Fetching payment providers from region");
+            const providerResponse = await getRegionPaymentProviders(cart.region_id);
+            const regionProviders = providerResponse.region?.payment_providers || [];
             if (regionProviders.length > 0) {
-              const formattedProviders = regionProviders.map((provider: any) => {
-                let name = provider.id || provider.provider_id;
-                if (name === 'stripe') name = '💳 Stripe';
-                else if (name === 'bank_transfer') name = '🏦 Bank Transfer';
-                else if (name === 'paypal') name = '💙 PayPal';
-                else if (name === 'pp_system_default') name = 'Manual Payment (Test)';
-                else name = (name || '').replace(/^pp_/, '').replace(/_/g, ' ').replace(/\b\w/g, (l: string) => l.toUpperCase());
-                return {
-                  id: provider.id || provider.provider_id,
-                  name,
-                };
-              });
-              setPaymentProviders(formattedProviders);
-              if (formattedProviders.length > 0) {
-                setSelectedProvider(formattedProviders[0].id);
-              }
-              console.log(`✅ Found ${formattedProviders.length} payment provider(s) from region:`, formattedProviders);
+              providers = regionProviders.map((provider: any) => ({
+                id: provider.id || provider.provider_id,
+                name: formatProviderName(provider.id || provider.provider_id),
+              }));
             }
           } catch (regionError) {
             console.warn("Could not load region payment providers:", regionError);
           }
         }
         
-        // Load available countries from region
-        if (cartData.cart?.region?.countries) {
-          const countries = cartData.cart.region.countries.map((c: any) => c.iso_2 || c.iso_2_code || c.code).filter(Boolean);
+        // If still no providers, try creating payment sessions (last resort - 2 API calls)
+        if (providers.length === 0) {
+          try {
+            console.log("🔄 Creating payment sessions (fallback method)");
+            await createPaymentSession(cartId);
+            const sessionData = await getPaymentSession(cartId);
+            
+            if (sessionData.payment_sessions && sessionData.payment_sessions.length > 0) {
+              providers = sessionData.payment_sessions.map((ps: any) => ({
+                id: ps.provider_id,
+                name: formatProviderName(ps.provider_id),
+                session: ps,
+              }));
+            }
+          } catch (sessionError: any) {
+            console.error("❌ Error creating payment sessions:", sessionError);
+            // Continue without payment providers
+          }
+        }
+
+        // Set providers if we found any
+        if (providers.length > 0) {
+          setPaymentProviders(providers);
+          setSelectedProvider(providers[0].id);
+          console.log(`✅ Found ${providers.length} payment provider(s):`, providers);
+        } else {
+          console.warn("⚠️ No payment providers found - check if providers are added to region in admin");
+        }
+        
+        // Load available countries from region (already in cart data)
+        if (cart.region?.countries) {
+          const countries = cart.region.countries.map((c: any) => c.iso_2 || c.iso_2_code || c.code).filter(Boolean);
           setAvailableCountries(countries);
           // Set default country to first available
           if (countries.length > 0 && !formData.country) {
             setFormData(prev => ({ ...prev, country: countries[0] }));
-          }
-        }
-        
-        // If no providers from region, try payment sessions (legacy method)
-        if (regionProviders.length === 0) {
-        try {
-            console.log("🔄 Creating payment sessions for cart:", cartId);
-          await createPaymentSession(cartId);
-          const sessionData = await getPaymentSession(cartId);
-            
-            console.log("📦 Payment session data:", sessionData);
-          
-          if (sessionData.payment_sessions && sessionData.payment_sessions.length > 0) {
-            // Extract unique providers from payment sessions
-              const providers = sessionData.payment_sessions.map((ps: any) => {
-                let name = ps.provider_id;
-                // Format provider names
-                if (name === 'stripe') name = '💳 Stripe';
-                else if (name === 'bank_transfer') name = '🏦 Bank Transfer';
-                else if (name === 'paypal') name = '💙 PayPal';
-                else if (name === 'pp_system_default') name = 'Manual Payment (Test)';
-                else name = name.replace(/^pp_/, '').replace(/_/g, ' ').replace(/\b\w/g, (l: string) => l.toUpperCase());
-                
-                return {
-              id: ps.provider_id,
-                  name: name
-                };
-              });
-            setPaymentProviders(providers);
-            
-            // Auto-select first provider
-            if (providers.length > 0) {
-              setSelectedProvider(providers[0].id);
-            }
-            console.log(`✅ Found ${providers.length} payment provider(s):`, providers);
-          } else {
-              console.error("❌ No payment sessions in response:", sessionData);
-              console.warn("⚠️ No payment sessions created - check if providers are added to region in admin");
-          }
-        } catch (sessionError: any) {
-            console.error("❌ Error creating payment sessions:", sessionError);
-            console.error("❌ Error details:", sessionError.message, sessionError.stack);
-          // Continue without payment providers for now
           }
         }
       } catch (e: any) {

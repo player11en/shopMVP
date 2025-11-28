@@ -101,31 +101,31 @@ export async function GET(
                 priceSetMap.set(ps.id, ps.prices || []);
               });
 
-              productWithPrices = {
-                ...product,
-                variants: product.variants.map((variant: any) => {
+        productWithPrices = {
+          ...product,
+          variants: product.variants.map((variant: any) => {
                   const prices = priceSetMap.get(variant.price_set_id) || [];
-                  
-                  // Sort prices: prefer EUR, then USD, then others
+            
+            // Sort prices: prefer EUR, then USD, then others
                   const sortedPrices = prices.sort((a: any, b: any) => {
-                    const aCode = a.currency_code?.toLowerCase();
-                    const bCode = b.currency_code?.toLowerCase();
-                    if (aCode === 'eur') return -1;
-                    if (bCode === 'eur') return 1;
-                    if (aCode === 'usd') return -1;
-                    if (bCode === 'usd') return 1;
-                    return 0;
-                  });
-                  
-                  return {
-                    ...variant,
-                    prices: sortedPrices.map((p: any) => ({
-                      amount: p.amount, // Amount is in cents
-                      currency_code: p.currency_code,
-                    })),
-                  };
-                }),
-              };
+              const aCode = a.currency_code?.toLowerCase();
+              const bCode = b.currency_code?.toLowerCase();
+              if (aCode === 'eur') return -1;
+              if (bCode === 'eur') return 1;
+              if (aCode === 'usd') return -1;
+              if (bCode === 'usd') return 1;
+              return 0;
+            });
+            
+            return {
+              ...variant,
+              prices: sortedPrices.map((p: any) => ({
+                amount: p.amount, // Amount is in cents
+                currency_code: p.currency_code,
+              })),
+            };
+          }),
+        };
             } catch (priceSetError: any) {
               console.warn(`[Product ${handle}] Could not fetch price sets:`, priceSetError.message);
               // Continue without prices

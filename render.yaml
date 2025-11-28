@@ -15,11 +15,11 @@ services:
       - key: DATABASE_URL
         sync: false  # Set this in Render dashboard
       - key: STORE_CORS
-        value: https://your-storefront.onrender.com,http://localhost:3000
+        value: https://storefront-tg3r.onrender.com,http://localhost:3000
       - key: ADMIN_CORS
-        value: https://your-admin.onrender.com,http://localhost:7001
+        value: https://medusa-backend-e42r.onrender.com,http://localhost:7001
       - key: AUTH_CORS
-        value: https://your-storefront.onrender.com,http://localhost:3000
+        value: https://storefront-tg3r.onrender.com,http://localhost:3000
       - key: JWT_SECRET
         generateValue: true
       - key: COOKIE_SECRET
